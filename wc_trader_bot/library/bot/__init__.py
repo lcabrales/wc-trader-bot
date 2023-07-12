@@ -20,7 +20,7 @@ IGNORE_EXCEPTIONS = (CommandNotFound, BadArgument)
 
 
 def get_prefix(bot, message):
-	prefix = db.field("SELECT bot_prefix FROM guilds WHERE id = ?", message.guild.id)
+	prefix = db.field("SELECT bot_prefix FROM guild WHERE id = ?", message.guild.id)
 	return when_mentioned_or(prefix)(bot, message)
 
 
@@ -51,21 +51,27 @@ class Bot(BotBase):
 		# intents.members = True
 		# intents.message_content = True
 
+		try:
+			with open("./data/banlist.txt", "r", encoding="utf-8") as f:
+				self.banlist = [int(line.strip()) for line in f.readlines()]
+		except FileNotFoundError:
+			self.banlist = []
+
 		super().__init__(
-			command_prefix=get_prefix, 
+			command_prefix=get_prefix,
 			owner_ids=OWNER_IDS, 
 			intents=Intents.all()
         )
 
-	def setup(self):
+	async def setup_hook(self):
 		for cog in COGS:
-			self.load_extension(f"library.cogs.{cog}")
+			await self.load_extension(f"library.cogs.{cog}")
 			print(f"{cog} - cog loaded")
 
 		print("setup complete")
 
 	def update_db(self):
-		db.multiexec("INSERT OR IGNORE INTO guilds (id) VALUES (?)", 
+		db.multiexec("INSERT OR IGNORE INTO guild (id) VALUES (?)", 
 					((guild.id,) for guild in self.guilds))
 		db.multiexec("INSERT OR IGNORE INTO user (id) VALUES (?)", 
 					((member.id,) for member in self.guild.members if not member.bot))
@@ -83,9 +89,6 @@ class Bot(BotBase):
         
 	def run(self, version):
 		self.VERSION = version
-
-		print("running setup...")
-		self.setup()
         
 		with open(TOKEN_PATH, "r", encoding="utf-8") as file:
 			self.TOKEN = file.read()
@@ -94,20 +97,20 @@ class Bot(BotBase):
 		super().run(self.TOKEN, reconnect=True)
         
 	async def process_commands(self, message):
-		context = await self.get_context(message, cls=Context)
+		ctx = await self.get_context(message, cls=Context)
 
-		if context.command is not None and context.guild is not None:
+		if ctx.command is not None and ctx.guild is not None:
 			if message.author.id in self.banlist:
-				await context.send("You are banned from using commands.")
+				await ctx.send("You are banned from using commands.")
 
 			elif not self.ready:
-				await context.send("I'm not ready to receive commands. Please wait a few seconds.")
+				await ctx.send("I'm not ready to receive commands. Please wait a few seconds.")
 
 			else:
-				await self.invoke(context)
+				await self.invoke(ctx)
 
 	async def on_connect(self):
-		print("bot connected: VERSION=" + self.VERSION)
+		print(f"bot connected: VERSION={self.VERSION}")
 
 	async def on_disconnect(self):
 		print("bot disconnected")
@@ -121,25 +124,25 @@ class Bot(BotBase):
 
 		raise
 
-	async def on_command_error(self, context, exception):
+	async def on_command_error(self, ctx, exception):
 		if any([isinstance(exception, error) for error in IGNORE_EXCEPTIONS]):
 			pass
 
 		elif isinstance(exception, MissingRequiredArgument):
-			await context.send("One or more required arguments are missing.")
+			await ctx.send("One or more required arguments are missing.")
 
 		elif isinstance(exception, CommandOnCooldown):
-			await context.send(f"That command is on {str(exception.cooldown.type).split('.')[-1]} cooldown. Try again in {exception.retry_after:,.2f} secs.")
+			await ctx.send(f"That command is on {str(exception.cooldown.type).split('.')[-1]} cooldown. Try again in {exception.retry_after:,.2f} secs.")
 
 		elif hasattr(exception, "original"):
 			# if isinstance(exception.original, HTTPException):
-			# 	await context.send("Unable to send message.")
+			# 	await ctx.send("Unable to send message.")
 
 			if isinstance(exception.original, exception):
-				await context.send("I do not have permission to do that.")
+				await ctx.send("I do not have permission to do that.")
 
 			else:
-				raise context.original
+				raise ctx.original
 
 		else:
 			raise exception
@@ -151,8 +154,6 @@ class Bot(BotBase):
 			self.scheduler.start()
 
 			self.update_db()
-
-			await self.stdout_channel.send("Now online!")
 
 			# embed = Embed(title="Now online!", description="WC Trader Bot is now online.", 
 			#               colour=0x0058F2, timestamp=datetime.utcnow())
@@ -176,12 +177,9 @@ class Bot(BotBase):
 			while not self.cogs_ready.all_ready():
 				await sleep(0.5)
 
-			await self.stdout.send("Now online!")
+			await self.stdout_channel.send("Now online!")
 			self.ready = True
 			print("bot ready")
-
-			meta = self.get_cog("Meta")
-			await meta.set()
 			
 		else:
 			print("bot reconnected")
@@ -212,5 +210,5 @@ class Bot(BotBase):
 
 			else:
 				await self.process_commands(message)
-		
+
 bot = Bot()
