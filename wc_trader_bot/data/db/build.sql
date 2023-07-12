@@ -945,27 +945,32 @@ VALUES
 
 
 --LIVE DATA TABLES
+CREATE TABLE IF NOT EXISTS guilds (
+	id INTEGER PRIMARY KEY,
+	bot_prefix TEXT DEFAULT "$"
+);
+
 CREATE TABLE IF NOT EXISTS user (
-  id TEXT PRIMARY KEY,
+  id INTEGER PRIMARY KEY,
   name VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS user_piece (
     id TEXT PRIMARY KEY,
     piece_id TEXT,
-    user_id TEXT,
+    user_id INTEGER,
     status INTEGER, --0 needed, 1 owned, 2 uft
     created_date TEXT,
     updated_date TEXT,
     FOREIGN KEY (piece_id) REFERENCES piece (id)
     FOREIGN KEY (user_id) REFERENCES user (id)
-)
+);
 
 CREATE TABLE IF NOT EXISTS user_map_completion (
     id TEXT PRIMARY KEY,
     map_id TEXT,
-    user_id TEXT,
+    user_id INTEGER,
     created_date TEXT, 
     FOREIGN KEY (map_id) REFERENCES map (id)
     FOREIGN KEY (user_id) REFERENCES user (id)
-)
+);

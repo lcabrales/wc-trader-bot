@@ -19,7 +19,7 @@ def with_commit(func):
 @with_commit
 def build():
     if isfile(BUILD_PATH):
-        scriptexecute(BUILD_PATH)
+        scriptexec(BUILD_PATH)
 
 
 def commit():
@@ -64,11 +64,11 @@ def execute(command, *values):
     cursor.execute(command, tuple(values))
 
 
-def multiexecute(command, valueset):
+def multiexec(command, valueset):
     cursor.executemany(command, valueset)
 
 
-def scriptexecute(path):
+def scriptexec(path):
     with open(path, "r", encoding="utf-8") as script:
         cursor.executescript(script.read())
 
