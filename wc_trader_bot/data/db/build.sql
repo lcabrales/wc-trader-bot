@@ -958,7 +958,7 @@ CREATE TABLE IF NOT EXISTS user_piece (
 	id TEXT PRIMARY KEY,
 	piece_id TEXT,
 	user_id INTEGER,
-	status INTEGER, --0 needed, 1 owned, 2 uft
+	status INTEGER, --0 seeking, 1 owned, 2 trade
 	created_date TEXT,
 	updated_date TEXT,
 	FOREIGN KEY (piece_id) REFERENCES piece (id)

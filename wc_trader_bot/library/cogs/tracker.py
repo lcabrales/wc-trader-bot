@@ -1,6 +1,6 @@
 from datetime import datetime
 from random import choice, randint
-from typing import Optional
+from typing import Optional, Literal
 from uuid import uuid4
 
 from aiohttp import request
@@ -15,11 +15,26 @@ from ..db import db
 
 STATUS_SEEKING = 0
 STATUS_OWNED = 1
-STATUS_UFT = 2
+STATUS_TRADE = 2
+
+COMMAND_STATUS_MAPPING = {
+    'owned': STATUS_OWNED,
+    'seeking': STATUS_SEEKING,
+    'trade': STATUS_TRADE
+}
 
 COLOUR_SUCCESS = 0x4BB543
 COLOUR_DEFAULT = 0x0058F2
 COLOUR_ERROR = 0xFF9494
+
+PIECES_OWNED_QUERY = """
+SELECT piece.name AS piece_name
+FROM piece
+JOIN map ON piece.map_id = map.id
+JOIN user_piece ON piece.id = user_piece.piece_id
+WHERE map.world_id = ? AND user_piece.user_id = ? AND user_piece.status = ?
+ORDER BY order_by ASC
+"""
 
 
 class Tracker(Cog):
@@ -28,21 +43,54 @@ class Tracker(Cog):
 
 	def to_upper(argument):
 		return argument.upper()
+	
+	@staticmethod
+	def array_to_string(array):
+		return ', '.join(array)
 
 	@group(invoke_without_command=True)
 	async def piece(self, ctx):
 		await ctx.send(f'Please specify the piece command (add, remove, need, trade)')
 
-	@piece.group(invoke_without_command=True)
-	async def list(self, ctx):
-		await ctx.send(f'Please specify the piece list command (owned, need, trade)')
+	@piece.command(name="list")
+	async def respond_list_command(self, ctx, status: Literal['owned', 'seeking', 'trade'], world_abbv: Optional[to_upper] = "all"):
+		status_value = COMMAND_STATUS_MAPPING.get(status, None)
 
-	@list.command(name="owned")
-	async def owned_pieces(self, ctx, world_abbv: to_upper):
-		pieces_owned = db.column("SELECT name FROM piece p INNER JOIN user_piece up ON p.id = up.piece_id WHERE up.user_id = ? AND status = ? ORDER BY order_by ASC", 
-			  			ctx.author.id, STATUS_OWNED)
+		world_abbv_list = []
+
+		if world_abbv == "all":
+			worlds = db.column("SELECT abbv FROM world")
+
+			for world in worlds:
+				world_abbv_list.append(world)
+
+		else:
+			world_abbv_list.append(world_abbv)
 		
-		await ctx.send(f"owned: {pieces_owned}")
+		fields=[]
+		for world_abbv in world_abbv_list:
+			(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
+			pieces_owned = db.column(PIECES_OWNED_QUERY, world_id, ctx.author.id, status_value)
+			field_value = "None" if not pieces_owned else self.array_to_string(pieces_owned)
+			
+			fields.append((world_name, field_value, False))
+		
+		embed_title = "Pieces"
+		if status_value is STATUS_OWNED:
+			embed_title = "Owned pieces"
+		
+		elif status_value is STATUS_SEEKING:
+			embed_title = "Seeking pieces"
+
+		elif status_value is STATUS_TRADE:
+			embed_title = "Trade pieces"
+
+		embed = Embed(title=embed_title, description=f"List of pieces in your collection marked as {status}.", 
+						colour=COLOUR_DEFAULT, timestamp=None)
+		for name, value, inline in fields:
+			embed.add_field(name=name, value=value, inline=inline)
+		
+		await ctx.send(embed=embed)
 
 	@piece.command(name="add")
 	async def add_piece(self, ctx, world_abbv: to_upper, piece_name):
@@ -61,8 +109,6 @@ class Tracker(Cog):
 		
 		piece_exists = db.field("SELECT COUNT(*) FROM piece p INNER JOIN user_piece up ON p.id = up.piece_id WHERE p.id = ? AND up.user_id = ? AND status = ?", 
 			  			piece_id, ctx.author.id, STATUS_OWNED) > 0
-		
-		print(piece_exists)
 
 		embed_description = None
 		embed_colour = COLOUR_DEFAULT
