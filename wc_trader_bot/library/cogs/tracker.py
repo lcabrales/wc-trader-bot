@@ -55,12 +55,16 @@ class Tracker(Cog):
 		await ctx.send(f'Please specify the piece command (add, remove, need, trade)')
 
 	@piece.command(name="list")
-	async def respond_list_command(self, ctx, status: Literal['owned', 'seeking', 'trade'], world_abbv: Optional[to_upper] = "all"):
+	async def respond_list_command(self, ctx, status: Literal['owned', 'seeking', 'trade'], 
+				world_abbv: to_upper, member: Optional[Member] = None):
+				
 		status_value = COMMAND_STATUS_MAPPING.get(status, None)
+		owner = member if member else ctx.author
+		is_author_owner = True if member else False
 
 		world_abbv_list = []
 
-		if world_abbv == "all":
+		if world_abbv == "ALL":
 			worlds = db.column("SELECT abbv FROM world")
 
 			for world in worlds:
@@ -72,7 +76,7 @@ class Tracker(Cog):
 		fields=[]
 		for world_abbv in world_abbv_list:
 			(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
-			pieces_owned = db.column(PIECES_OWNED_QUERY, world_id, ctx.author.id, status_value)
+			pieces_owned = db.column(PIECES_OWNED_QUERY, world_id, owner.id, status_value)
 			
 			if pieces_owned:
 				fields.append((world_name, self.array_to_string(pieces_owned), False))
@@ -87,8 +91,14 @@ class Tracker(Cog):
 		elif status_value is STATUS_TRADE:
 			embed_title = "Trade pieces"
 
-		embed = Embed(title=embed_title, description=f"List of pieces in your collection marked as {status}.", 
-						colour=COLOUR_DEFAULT, timestamp=None)
+		description_display_name = "your" if not is_author_owner else f"{owner.display_name}'s"
+
+		embed = Embed(
+			title=embed_title, 
+			description=f"List of pieces in {description_display_name} collection marked as {status}.", 
+			colour=COLOUR_DEFAULT, 
+			timestamp=None
+		)
 		for name, value, inline in fields:
 			embed.add_field(name=name, value=value, inline=inline)
 		
