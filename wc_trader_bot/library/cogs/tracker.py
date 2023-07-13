@@ -13,6 +13,7 @@ from discord.ext.commands import command, group
 from ..db import db
 
 
+STATUS_NONE = -1 # not for db
 STATUS_SEEKING = 0
 STATUS_OWNED = 1
 STATUS_TRADE = 2
@@ -20,7 +21,8 @@ STATUS_TRADE = 2
 COMMAND_STATUS_MAPPING = {
     'owned': STATUS_OWNED,
     'seeking': STATUS_SEEKING,
-    'trade': STATUS_TRADE
+    'trade': STATUS_TRADE,
+    'none': STATUS_NONE
 }
 
 COLOUR_SUCCESS = 0x4BB543
@@ -71,9 +73,9 @@ class Tracker(Cog):
 		for world_abbv in world_abbv_list:
 			(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
 			pieces_owned = db.column(PIECES_OWNED_QUERY, world_id, ctx.author.id, status_value)
-			field_value = "None" if not pieces_owned else self.array_to_string(pieces_owned)
 			
-			fields.append((world_name, field_value, False))
+			if pieces_owned:
+				fields.append((world_name, self.array_to_string(pieces_owned), False))
 		
 		embed_title = "Pieces"
 		if status_value is STATUS_OWNED:
@@ -92,8 +94,10 @@ class Tracker(Cog):
 		
 		await ctx.send(embed=embed)
 
-	@piece.command(name="add")
-	async def add_piece(self, ctx, world_abbv: to_upper, piece_name):
+	@piece.command(name="set")
+	async def set_piece(self, ctx, status: Literal['owned', 'seeking', 'trade', 'none'], world_abbv: to_upper, piece_name):
+		status_value = COMMAND_STATUS_MAPPING.get(status, None)
+
 		(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
 		if world_id is None or world_name is None:
 			await ctx.send(f'Bad argument: {world_abbv}')
@@ -108,12 +112,12 @@ class Tracker(Cog):
 			raise BadArgument
 		
 		piece_exists = db.field("SELECT COUNT(*) FROM piece p INNER JOIN user_piece up ON p.id = up.piece_id WHERE p.id = ? AND up.user_id = ? AND status = ?", 
-			  			piece_id, ctx.author.id, STATUS_OWNED) > 0
+			  			piece_id, ctx.author.id, status_value) > 0
 
 		embed_description = None
 		embed_colour = COLOUR_DEFAULT
 		if piece_exists:
-			embed_description = f"You already own the piece {piece_name}"
+			embed_description = f"You already marked the piece {piece_name} as {status}"
 			embed_colour = COLOUR_ERROR
 
 		else:
@@ -121,10 +125,10 @@ class Tracker(Cog):
 						str(uuid4()),
 						piece_id,
 						ctx.author.id,
-						STATUS_OWNED,
+						status_value,
 						datetime.utcnow())
 			
-			embed_description = f"Added piece {piece_name} to your collection"
+			embed_description = f"Marked the piece {piece_name} as {status} in your collection"
 			embed_colour = COLOUR_SUCCESS
 
 		embed = Embed(title=world_name, description=embed_description, 
