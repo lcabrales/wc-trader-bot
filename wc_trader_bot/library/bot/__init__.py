@@ -47,10 +47,6 @@ class Bot(BotBase):
 
 		db.autosave(self.scheduler)
 
-		# intents = Intents.default()
-		# intents.members = True
-		# intents.message_content = True
-
 		try:
 			with open("./data/banlist.txt", "r", encoding="utf-8") as f:
 				self.banlist = [int(line.strip()) for line in f.readlines()]
@@ -73,17 +69,6 @@ class Bot(BotBase):
 	def update_db(self):
 		db.multiexec("INSERT OR IGNORE INTO guild (id) VALUES (?)", 
 					((guild.id,) for guild in self.guilds))
-		# db.multiexec("INSERT OR IGNORE INTO user (id) VALUES (?)", 
-		# 			((member.id,) for member in self.guild.members if not member.bot))
-
-		# to_remove = []
-		# stored_members = db.column("SELECT id FROM user")
-		# for id_ in stored_members:
-		# 	if not self.guild.get_member(id_):
-		# 		to_remove.append(id_)
-                
-		# db.multiexec("DELETE FROM user WHERE id = ?", 
-		# 			((id_,) for id_ in to_remove))
         
 		db.commit()
         
@@ -149,25 +134,6 @@ class Bot(BotBase):
 			self.scheduler.start()
 
 			self.update_db()
-
-			# embed = Embed(title="Now online!", description="WC Trader Bot is now online.", 
-			#               colour=0x0058F2, timestamp=datetime.utcnow())
-			# fields = [
-			#     ("Name", "Value", True),
-			#     ("Name 2", "Value 2", True),
-			#     ("Name 3", "Value 3", False),
-			# ]
-			# for name, value, inline in fields:
-			#     embed.add_field(name=name, value=value, inline=inline)
-
-			# icon_url = None
-			# if (icon_url := self.guild.icon) is not None: icon_url = self.guild.icon.url
-			# embed.set_author(name="World Challenges Bot", icon_url=icon_url)
-			# embed.set_thumbnail(url=icon_url)
-			# embed.set_image(url=icon_url)
-			# embed.set_footer(text="Footer")
-
-			# await channel.send(embed=embed)
 			
 			while not self.cogs_ready.all_ready():
 				await sleep(0.5)

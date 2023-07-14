@@ -13,6 +13,8 @@ from discord.ext.commands import command, group
 from ..db import db
 
 
+HELP_README_URL = "https://gist.github.com/panacea0706/62ce539ea6d5e2b0a2ce606cd8315f25"
+
 STATUS_NONE = -1 # not for db
 STATUS_SEEKING = 0
 STATUS_OWNED = 1
@@ -61,6 +63,10 @@ class Tracker(Cog):
 	@group(invoke_without_command=True)
 	async def piece(self, ctx):
 		await ctx.send(f'Please specify the piece command (add, remove, need, trade)')
+
+	@piece.command(name="help")
+	async def show_readme_url(self, ctx):
+		await ctx.send(HELP_README_URL)
 
 	@piece.command(name="list")
 	async def respond_list_command(self, ctx, status: Literal['owned', 'seeking', 'trade'], 
@@ -151,6 +157,7 @@ class Tracker(Cog):
 						ctx.author.id,
 						status_value,
 						datetime.utcnow())
+			db.commit()
 			
 			embed_description = f"Marked the piece {piece_name} as {status} in your collection"
 			embed_colour = COLOUR_SUCCESS
@@ -216,63 +223,3 @@ class Tracker(Cog):
 
 async def setup(client):
 	await client.add_cog(Tracker(client))
-	
-
-# class WorldDropdown(Select):
-# 	def __init__(self):
-
-# 		worlds = db.column("SELECT name FROM world")
-# 		# Set the options that will be presented inside the dropdown
-# 		options = []
-# 		for world in worlds:
-# 			options.append(SelectOption(label=world, description=None, emoji=None))
-
-# 		# The placeholder is what will be shown when no option is chosen
-# 		# The min and max values indicate we can only pick one of the three options
-# 		# The options parameter defines the dropdown options. We defined this above
-# 		super().__init__(placeholder='Select the world', min_values=1, max_values=1, options=options)
-
-# 	async def callback(self, interaction: Interaction):
-# 		# Use the interaction object to send a response message containing
-# 		# the user's favourite colour or choice. The self object refers to the
-# 		# Select object, and the values attribute gets a list of the user's
-# 		# selected options. We only want the first one.
-# 		view = MapPicker(self.values[0])
-
-# 		# Sending a message containing our view
-# 		await interaction.channel.send('Choose the piece to add to your collection:', view=view)
-
-# class MapDropdown(Select):
-# 	def __init__(self, selected_world):
-
-# 		maps = db.column("SELECT name FROM map WHERE world_id=(SELECT id FROM world WHERE name = ?)", selected_world)
-# 		# Set the options that will be presented inside the dropdown
-# 		options = []
-# 		for map in maps:
-# 			options.append(SelectOption(label=map, description=None, emoji=None))
-
-# 		# The placeholder is what will be shown when no option is chosen
-# 		# The min and max values indicate we can only pick one of the three options
-# 		# The options parameter defines the dropdown options. We defined this above
-# 		super().__init__(placeholder='Select the map', min_values=1, max_values=1, options=options)
-
-# 	async def callback(self, interaction: Interaction):
-# 		# Use the interaction object to send a response message containing
-# 		# the user's favourite colour or choice. The self object refers to the
-# 		# Select object, and the values attribute gets a list of the user's
-# 		# selected options. We only want the first one.
-# 		await interaction.response.send_message(f'Your favourite colour is {self.values[0]}')
-	
-
-# class WorldPicker(View):
-# 	def __init__(self):
-# 		super().__init__()
-
-# 		self.add_item(WorldDropdown())
-
-
-# class MapPicker(View):
-# 	def __init__(self, selected_world):
-# 		super().__init__()
-
-# 		self.add_item(MapDropdown(selected_world))
