@@ -38,10 +38,18 @@ WHERE map.world_id = ? AND user_piece.user_id = ? AND user_piece.status = ?
 ORDER BY order_by ASC
 """
 
+PIECES_SEARCH_QUERY = """
+SELECT user_piece.user_id
+FROM user_piece
+JOIN piece ON user_piece.piece_id = piece.id
+JOIN map ON piece.map_id = map.id
+WHERE map.world_id = ? AND piece.id = ? AND user_piece.status = ?;
+"""
+
 
 class Tracker(Cog):
-	def __init__(self, bot):
-		self.bot = bot
+	def __init__(self, client):
+		self.client = client
 
 	def to_upper(argument):
 		return argument.upper()
@@ -57,8 +65,11 @@ class Tracker(Cog):
 	@piece.command(name="list")
 	async def respond_list_command(self, ctx, status: Literal['owned', 'seeking', 'trade'], 
 				world_abbv: to_upper, member: Optional[Member] = None):
-				
 		status_value = COMMAND_STATUS_MAPPING.get(status, None)
+		if status_value is None:
+			await ctx.send(f'Bad argument: {status}')
+			raise BadArgument
+		
 		owner = member if member else ctx.author
 		is_author_owner = True if member else False
 
@@ -107,7 +118,10 @@ class Tracker(Cog):
 	@piece.command(name="set")
 	async def set_piece(self, ctx, status: Literal['owned', 'seeking', 'trade', 'none'], world_abbv: to_upper, piece_name):
 		status_value = COMMAND_STATUS_MAPPING.get(status, None)
-
+		if status_value is None:
+			await ctx.send(f'Bad argument: {status}')
+			raise BadArgument
+		
 		(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
 		if world_id is None or world_name is None:
 			await ctx.send(f'Bad argument: {world_abbv}')
@@ -121,8 +135,8 @@ class Tracker(Cog):
 			await ctx.send(f'Bad argument: {piece_name}')
 			raise BadArgument
 		
-		piece_exists = db.field("SELECT COUNT(*) FROM piece p INNER JOIN user_piece up ON p.id = up.piece_id WHERE p.id = ? AND up.user_id = ? AND status = ?", 
-			  			piece_id, ctx.author.id, status_value) > 0
+		piece_exists = db.field("SELECT COUNT(*) FROM piece p INNER JOIN user_piece up ON p.id = up.piece_id WHERE p.id = ? AND status = ?", 
+			  			piece_id, status_value) > 0
 
 		embed_description = None
 		embed_colour = COLOUR_DEFAULT
@@ -146,14 +160,62 @@ class Tracker(Cog):
 		
 		await ctx.send(embed=embed)
 
+	@piece.command(name="search")
+	async def search_piece(self, ctx, status: Literal['owned', 'seeking', 'trade'], world_abbv: to_upper, piece_name):
+		status_value = COMMAND_STATUS_MAPPING.get(status, None)
+		if status_value is None:
+			await ctx.send(f'Bad argument: {status}')
+			raise BadArgument
+
+		(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
+		if world_id is None or world_name is None:
+			await ctx.send(f'Bad argument: {world_abbv}')
+			raise BadArgument
+		
+		map_name = piece_name[0]
+		map_id = db.field("SELECT id FROM map WHERE name = ? AND world_id = ?", map_name, world_id)
+		
+		piece_id = db.field("SELECT id FROM piece WHERE map_id = ? AND name = ?", map_id, piece_name)
+		if piece_id is None:
+			await ctx.send(f'Bad argument: {piece_name}')
+			raise BadArgument
+		
+		user_ids = db.record(PIECES_SEARCH_QUERY, world_id, piece_id, status_value)
+
+		embed_title = f"Server search for {world_name} {piece_name}"
+		embed_description = None
+		embed_colour = COLOUR_DEFAULT
+		embed_fields=[]
+
+		if user_ids:
+			user_names=[]
+			for user_id in user_ids:
+				user = await self.client.fetch_user(user_id)
+				user_names.append(user.display_name)
+
+			embed_description = f"{len(user_names)} result{'s' if len(user_names) > 1 else ''} found."
+			
+			embed_fields.append((status.capitalize(), self.array_to_string(user_names), False))
+		
+		else:
+			embed_description = "No results found."
+
+		embed = Embed(title=embed_title, description=embed_description, 
+							colour=embed_colour, timestamp=None)
+		
+		for name, value, inline in embed_fields:
+			embed.add_field(name=name, value=value, inline=inline)
+
+		await ctx.send(embed=embed)
+
 	@Cog.listener()
 	async def on_ready(self):
-		if not self.bot.ready:
-			self.bot.cogs_ready.ready_up("tracker")
+		if not self.client.ready:
+			self.client.cogs_ready.ready_up("tracker")
 
 
-async def setup(bot):
-	await bot.add_cog(Tracker(bot))
+async def setup(client):
+	await client.add_cog(Tracker(client))
 	
 
 # class WorldDropdown(Select):
