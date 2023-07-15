@@ -122,7 +122,7 @@ class Tracker(Cog):
 		await ctx.send(embed=embed)
 
 	@piece.command(name="set")
-	async def set_piece(self, ctx, status: Literal['owned', 'seeking', 'trade', 'none'], world_abbv: to_upper, piece_name):
+	async def set_piece(self, ctx, status: Literal['owned', 'seeking', 'trade', 'none'], world_abbv: to_upper, *pieces):
 		status_value = COMMAND_STATUS_MAPPING.get(status, None)
 		if status_value is None:
 			await ctx.send(f'Bad argument: {status}')
@@ -133,24 +133,60 @@ class Tracker(Cog):
 			await ctx.send(f'Bad argument: {world_abbv}')
 			raise BadArgument
 		
-		map_name = piece_name[0]
-		map_id = db.field("SELECT id FROM map WHERE name = ? AND world_id = ?", map_name, world_id)
-		
-		piece_id = db.field("SELECT id FROM piece WHERE map_id = ? AND name = ?", map_id, piece_name)
-		if piece_id is None:
-			await ctx.send(f'Bad argument: {piece_name}')
+		if not pieces:
+			await ctx.send(f'Bad argument: {pieces}')
 			raise BadArgument
 		
-		piece_exists = db.field("SELECT COUNT(*) FROM piece p INNER JOIN user_piece up ON p.id = up.piece_id WHERE p.id = ? AND status = ?", 
-			  			piece_id, status_value) > 0
+		pieces_set = []
+		for piece_name in pieces:
+			map_name = piece_name[0]
+			map_id = db.field("SELECT id FROM map WHERE name = ? AND world_id = ?", map_name, world_id)
+			
+			piece_id = db.field("SELECT id FROM piece WHERE map_id = ? AND name = ?", map_id, piece_name)
+			if piece_id is None:
+				continue
 
-		embed_description = None
+			db.execute("INSERT OR IGNORE INTO user_piece (id, piece_id, user_id, status, created_date) VALUES (?,?,?,?,?)", 
+						str(uuid4()),
+						piece_id,
+						ctx.author.id,
+						status_value,
+						datetime.utcnow())
+			
+			pieces_set.append(piece_name)
+
+		db.commit()
+		
+		
+		embed_title = world_name
+		embed_description = f"Marked the following {world_name} pieces as {status} in your collection:"
 		embed_colour = COLOUR_DEFAULT
-		if piece_exists:
-			embed_description = f"You already marked the piece {piece_name} as {status}"
-			embed_colour = COLOUR_ERROR
+		embed = Embed(title=embed_title, description=embed_description, 
+						colour=embed_colour, timestamp=None)
+		embed.add_field(name=status.capitalize(), value=self.array_to_string(pieces_set), inline=False)
+		
+		await ctx.send(embed=embed)
 
-		else:
+	@piece.command(name="setall")
+	async def set_pieces(self, ctx, status: Literal['owned', 'seeking', 'trade', 'none'], world_abbv: to_upper, 
+		      map_name: Literal['1', '2', '3']):
+		status_value = COMMAND_STATUS_MAPPING.get(status, None)
+		if status_value is None:
+			await ctx.send(f'Bad argument: {status}')
+			raise BadArgument
+		
+		(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
+		if world_id is None or world_name is None:
+			await ctx.send(f'Bad argument: {world_abbv}')
+			raise BadArgument
+		
+		map_id = db.field("SELECT id FROM map WHERE name = ? AND world_id = ?", map_name, world_id)
+		if map_id is None:
+				await ctx.send(f'Bad argument: {map_name}')
+				raise BadArgument
+		
+		piece_ids = db.column("SELECT id FROM piece WHERE map_id = ?", map_id)
+		for piece_id in piece_ids:
 			db.execute("INSERT OR IGNORE INTO user_piece (id, piece_id, user_id, status, created_date) VALUES (?,?,?,?,?)", 
 						str(uuid4()),
 						piece_id,
@@ -159,8 +195,8 @@ class Tracker(Cog):
 						datetime.utcnow())
 			db.commit()
 			
-			embed_description = f"Marked the piece {piece_name} as {status} in your collection"
-			embed_colour = COLOUR_SUCCESS
+		embed_description = f"Marked **all** the pieces for the map {world_name} {map_name} as {status} in your collection"
+		embed_colour = COLOUR_SUCCESS
 
 		embed = Embed(title=world_name, description=embed_description, 
 						colour=embed_colour, timestamp=None)
