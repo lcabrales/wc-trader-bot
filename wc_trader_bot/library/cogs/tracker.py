@@ -13,8 +13,6 @@ from discord.ext.commands import command, group
 from ..db import db
 
 
-HELP_README_URL = "https://gist.github.com/panacea0706/62ce539ea6d5e2b0a2ce606cd8315f25"
-
 STATUS_NONE = -1 # not for db
 STATUS_SEEKING = 0
 STATUS_OWNED = 1
@@ -36,8 +34,8 @@ SELECT piece.name AS piece_name
 FROM piece
 JOIN map ON piece.map_id = map.id
 JOIN user_piece ON piece.id = user_piece.piece_id
-WHERE map.world_id = ? AND user_piece.user_id = ? AND user_piece.status = ?
-ORDER BY order_by ASC
+WHERE map.world_id = ? AND user_piece.user_id = ? AND user_piece.status = ? 
+ORDER BY map.name, piece.order_by ASC
 """
 
 PIECES_SEARCH_QUERY = """
@@ -63,10 +61,6 @@ class Tracker(Cog):
 	@group(invoke_without_command=True)
 	async def piece(self, ctx):
 		await ctx.send(f'Please specify the piece command (add, remove, need, trade)')
-
-	@piece.command(name="help")
-	async def show_readme_url(self, ctx):
-		await ctx.send(HELP_README_URL)
 
 	@piece.command(name="list")
 	async def respond_list_command(self, ctx, status: Literal['owned', 'seeking', 'trade'], 

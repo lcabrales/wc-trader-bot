@@ -56,7 +56,8 @@ class Bot(BotBase):
 		super().__init__(
 			command_prefix=get_prefix,
 			owner_ids=OWNER_IDS, 
-			intents=Intents.all()
+			intents=Intents.all(),
+			help_command=None
         )
 
 	async def setup_hook(self):
