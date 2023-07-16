@@ -36,7 +36,7 @@ Set the status of a piece in your collection.
 
 ```?piece set {status} {world} {pieces}```
 
-* `{status}` - One of `owned`, `seeking`, `trade`, `none`.
+* `{status}` - One of `owned`, `seeking`, `trade`, `remove`. Note, you can also use `none` as an alias for `remove`.
 * `{world}` - Two-letter world abbreviation (check the World Abbreviations section).
 * `{pieces}` - Piece number. Can be multiple of the same world separeted by spaces. Example: `1.10 1.16 1.20`
 
@@ -52,7 +52,7 @@ Set the status of a piece in your collection.
 
 * To remove the status of Space Station 2.6 in your collection:
 
-```?piece set none VP 2.6```
+```?piece set remove VP 2.6```
 
 * To mark the pieces Krawk Island 3.1, 3.6 and 3.10 as owned:
 
@@ -136,7 +136,7 @@ Use this to set the status of all map pieces.
 
 ```?map set {status} {world} {map}```
 
-* `{status}` - One of `owned`, `seeking`, `trade`, `none`.
+* `{status}` - One of `owned`, `seeking`, `trade`, `remove`. Note, you can also use `none` as an alias for `remove`.
 * `{world}` - Two-letter world abbreviation (check the World Abbreviations section).
 * `{map}` - Map number. Example: `1`.
 
@@ -149,6 +149,10 @@ Use this to set the status of all map pieces.
 * To set all the pieces of Faerieland 2 as seeking:
 
 ```?map set seeking FL 2```
+
+* To remove all pieces of Terror Mountain 1 from your collection (this includes every status):
+
+```?map set remove FL 2```
 
 ## ?map complete
 

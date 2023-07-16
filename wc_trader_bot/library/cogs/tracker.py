@@ -22,7 +22,8 @@ COMMAND_STATUS_MAPPING = {
     'owned': STATUS_OWNED,
     'seeking': STATUS_SEEKING,
     'trade': STATUS_TRADE,
-    'none': STATUS_NONE
+    'none': STATUS_NONE,
+    'remove': STATUS_NONE # alias for none
 }
 
 COLOUR_SUCCESS = 0x4BB543
@@ -36,6 +37,12 @@ JOIN map ON piece.map_id = map.id
 JOIN user_piece ON piece.id = user_piece.piece_id
 WHERE map.world_id = ? AND user_piece.user_id = ? AND user_piece.status = ? 
 ORDER BY map.name, piece.order_by ASC
+"""
+
+PIECE_USER_REMOVE_QUERY = """
+DELETE FROM user_piece
+WHERE user_id = ?
+AND piece_id = ?;
 """
 
 PIECES_USER_UNNASSIGNED_QUERY = """
@@ -151,7 +158,9 @@ class Tracker(Cog):
 		await ctx.send(embed=embed)
 
 	@piece.command(name="set")
-	async def set_piece(self, ctx, status: Literal['owned', 'seeking', 'trade', 'none'], world_abbv: to_upper, *pieces):
+	async def set_piece(self, ctx, status: Literal['owned', 'seeking', 'trade', 'none', 'remove'], world_abbv: to_upper, *pieces):
+		owner = ctx.author
+
 		status_value = COMMAND_STATUS_MAPPING.get(status, None)
 		if status_value is None:
 			await ctx.send(f'Bad argument: {status}')
@@ -175,20 +184,40 @@ class Tracker(Cog):
 			if piece_id is None:
 				continue
 
+			pieces_set.append(piece_name)
+
+			# if the status is none/remove
+			if status_value == STATUS_NONE:
+				db.execute(PIECE_USER_REMOVE_QUERY, owner.id, piece_id)
+				continue
+
+			# remove the user piece from seeking if it was set as owned
+			if status_value == STATUS_OWNED:
+				seeking_user_piece_id = db.field("SELECT up.id FROM piece p INNER JOIN user_piece up ON p.id = up.piece_id WHERE p.id = ? AND status = ?", 
+			  			piece_id, STATUS_SEEKING)
+				
+				if seeking_user_piece_id:
+					db.execute("DELETE FROM user_piece WHERE id = ?", seeking_user_piece_id)
+			
+			# mark the piece as the specified status
 			db.execute("INSERT OR IGNORE INTO user_piece (id, piece_id, user_id, status, created_date) VALUES (?,?,?,?,?)", 
 						str(uuid4()),
 						piece_id,
-						ctx.author.id,
+						owner.id,
 						status_value,
 						datetime.utcnow())
-			
-			pieces_set.append(piece_name)
 
 		db.commit()
 		
 		
 		embed_title = world_name
-		embed_description = f"Marked the following **{world_name}** pieces as **{status}** in your collection:"
+
+		if status_value == STATUS_NONE:
+			embed_description = f"Removed the following **{world_name}** pieces from your collection:"
+
+		else:
+			embed_description = f"Marked the following **{world_name}** pieces as **{status}** in your collection:"
+
 		embed_colour = COLOUR_DEFAULT
 		embed = Embed(title=embed_title, description=embed_description, 
 						colour=embed_colour, timestamp=None)
@@ -291,11 +320,11 @@ class Tracker(Cog):
 
 			embed_description = f"{len(user_names)} result{'s' if len(user_names) > 1 else ''} found."
 			
-			embed_fields.append(
+			embed_fields.append((
 				f"{status.capitalize()} pieces", 
 				self.array_to_string(user_names), 
 				False
-			)
+			))
 		
 		else:
 			embed_description = "No results found."
@@ -316,7 +345,7 @@ class Tracker(Cog):
 		await ctx.send(f'Please specify the map command')
 
 	@map.command(name="set")
-	async def set_map_pieces(self, ctx, status: Literal['owned', 'seeking', 'trade', 'none'], world_abbv: to_upper, 
+	async def set_map_pieces(self, ctx, status: Literal['owned', 'seeking', 'trade', 'none', 'remove'], world_abbv: to_upper, 
 		      map_name: Literal['1', '2', '3']):
 		owner = ctx.author
 
