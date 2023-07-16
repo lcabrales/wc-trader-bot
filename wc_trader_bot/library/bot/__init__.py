@@ -45,7 +45,6 @@ class Ready(object):
 
 class Bot(BotBase):
 	def __init__(self):
-		self.guild = None
 		self.scheduler = AsyncIOScheduler()
 
 		self.ready = False
@@ -136,7 +135,6 @@ class Bot(BotBase):
 
 	async def on_ready(self):
 		if not self.ready:
-			self.guild = self.get_guild(1127307149161283655)
 			# self.stdout_channel = self.get_channel(1128443141641482341)
 			self.scheduler.start()
 
