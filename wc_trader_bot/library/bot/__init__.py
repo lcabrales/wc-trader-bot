@@ -112,7 +112,7 @@ class Bot(BotBase):
 			channel = args[0]
 			await channel.send("Something went wrong.")
             
-		await self.stdout_channel.send("An error occurred.")
+		# await self.stdout_channel.send("An error occurred.")
 
 		raise
 
@@ -137,7 +137,7 @@ class Bot(BotBase):
 	async def on_ready(self):
 		if not self.ready:
 			self.guild = self.get_guild(1127307149161283655)
-			self.stdout_channel = self.get_channel(1128443141641482341)
+			# self.stdout_channel = self.get_channel(1128443141641482341)
 			self.scheduler.start()
 
 			self.update_db()
@@ -145,7 +145,7 @@ class Bot(BotBase):
 			while not self.cogs_ready.all_ready():
 				await sleep(0.5)
 
-			await self.stdout_channel.send("Now online!")
+			# await self.stdout_channel.send("Now online!")
 			self.ready = True
 			print("bot ready")
 			
