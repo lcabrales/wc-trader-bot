@@ -239,11 +239,11 @@ class Tracker(Cog):
 			
 			embed_description = f"Marked all the unnassigned pieces for the map **{world_name} {map_name}** as **{status}** in your collection."
 			embed_colour = COLOUR_SUCCESS
-			embed_fields.append(
+			embed_fields.append((
 				f"{status.capitalize()} pieces", 
 		       	f"{'None' if not pieces_set else self.array_to_string(pieces_set)}", 
 			  	False
-			)
+			))
 
 		else:
 			embed_description = f"There were no unnassigned pieces for the map **{world_name} {map_name}** in your collection."
