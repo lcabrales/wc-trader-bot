@@ -4,8 +4,8 @@ from typing import Optional
 from aiohttp import request
 from discord import Member, Embed
 from discord.ext.commands import Cog
-from discord.ext.commands import BadArgument
-from discord.ext.commands import command
+from discord.ext.commands import BadArgument, BucketType
+from discord.ext.commands import command, cooldown
 
 
 class Fun(Cog):
@@ -14,8 +14,11 @@ class Fun(Cog):
 
 	@command(name="hello", aliases=["hi"])
 	async def say_hello(self, ctx):
-		print("Say hello")
 		await ctx.send(f"{choice(('Hello', 'Hi', 'Hey', 'Hiya'))} {ctx.author.mention}!")
+
+	@command(name="coinflip", aliases=["coin"])
+	async def coinflip(self, ctx):
+		await ctx.send(f"{choice(('Heads', 'Tails'))}")
 
 	@Cog.listener()
 	async def on_ready(self):
