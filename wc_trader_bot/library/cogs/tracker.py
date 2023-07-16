@@ -55,6 +55,26 @@ JOIN map ON piece.map_id = map.id
 WHERE map.world_id = ? AND piece.id = ? AND user_piece.status = ?;
 """
 
+MAP_REMOVE_ALL_PIECES_QUERY = """
+DELETE FROM user_piece
+WHERE user_id = ?
+AND piece_id IN (
+    SELECT id
+    FROM piece
+    WHERE map_id = ?
+);
+"""
+
+MAP_REMOVE_ALL_PIECES_STATUS_QUERY = """
+DELETE FROM user_piece
+WHERE user_id = ?
+AND status = ?
+AND piece_id IN (
+    SELECT id
+    FROM piece
+    WHERE map_id = ?
+);
+"""
 
 class Tracker(Cog):
 	def __init__(self, client):
@@ -83,7 +103,7 @@ class Tracker(Cog):
 			raise BadArgument
 		
 		owner = member if member else ctx.author
-		is_author_owner = True if member else False
+		is_author_owner = True if ctx.author == owner else False
 
 		world_abbv_list = []
 
@@ -117,12 +137,12 @@ class Tracker(Cog):
 		elif status_value is STATUS_TRADE:
 			embed_title = "Trade pieces"
 
-		description_display_name = "your" if not is_author_owner else f"{owner.display_name}'s"
+		description_display_name = "your" if is_author_owner else f"{owner.display_name}'s"
 
 		embed = Embed(
 			title=embed_title, 
 			description=f"List of pieces in {description_display_name} collection marked as {status}.", 
-			colour=COLOUR_SUCCESS, 
+			colour=COLOUR_DEFAULT, 
 			timestamp=None
 		)
 		for name, value, inline in fields:
@@ -298,6 +318,8 @@ class Tracker(Cog):
 	@map.command(name="set")
 	async def set_map_pieces(self, ctx, status: Literal['owned', 'seeking', 'trade', 'none'], world_abbv: to_upper, 
 		      map_name: Literal['1', '2', '3']):
+		owner = ctx.author
+
 		status_value = COMMAND_STATUS_MAPPING.get(status, None)
 		if status_value is None:
 			await ctx.send(f'Bad argument: {status}')
@@ -313,22 +335,50 @@ class Tracker(Cog):
 				await ctx.send(f'Bad argument: {map_name}')
 				raise BadArgument
 		
-		piece_ids = db.column("SELECT id FROM piece WHERE map_id = ?", map_id)
-		for piece_id in piece_ids:
-			db.execute("INSERT OR IGNORE INTO user_piece (id, piece_id, user_id, status, created_date) VALUES (?,?,?,?,?)", 
-						str(uuid4()),
-						piece_id,
-						ctx.author.id,
-						status_value,
-						datetime.utcnow())
-		
-		db.commit()
+		if status_value == STATUS_NONE:
+			db.execute(MAP_REMOVE_ALL_PIECES_QUERY, owner.id, map_id)
 			
-		embed_description = f"Marked **all** the pieces for the map {world_name} {map_name} as {status} in your collection."
-		embed_colour = COLOUR_SUCCESS
+			embed_description = f"Removed **all** the pieces for the map {world_name} {map_name} in your collection."
+		
+		else:
+			piece_ids = db.column("SELECT id FROM piece WHERE map_id = ?", map_id)
+			for piece_id in piece_ids:
+				db.execute("INSERT OR IGNORE INTO user_piece (id, piece_id, user_id, status, created_date) VALUES (?,?,?,?,?)", 
+							str(uuid4()),
+							piece_id,
+							owner.id,
+							status_value,
+							datetime.utcnow())
+		
+			embed_description = f"Marked **all** the pieces for the map {world_name} {map_name} as {status} in your collection."
 
+		db.commit()
+		
 		embed = Embed(title=world_name, description=embed_description, 
-						colour=embed_colour, timestamp=None)
+						colour=COLOUR_SUCCESS, timestamp=None)
+		
+		await ctx.send(embed=embed)
+
+	@map.command(name="complete")
+	async def set_map_complete(self, ctx, world_abbv: to_upper, map_name: Literal['1', '2', '3']):
+		owner = ctx.author
+		
+		(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
+		if world_id is None or world_name is None:
+			await ctx.send(f'Bad argument: {world_abbv}')
+			raise BadArgument
+		
+		map_id = db.field("SELECT id FROM map WHERE name = ? AND world_id = ?", map_name, world_id)
+		if map_id is None:
+				await ctx.send(f'Bad argument: {map_name}')
+				raise BadArgument
+		
+		db.execute(MAP_REMOVE_ALL_PIECES_STATUS_QUERY, owner.id, STATUS_OWNED, map_id)
+		db.commit()
+
+		embed_description = f"Set the map {world_name} {map_name} as completed and removed **all** its owned pieces in your collection."
+		embed = Embed(title=world_name, description=embed_description, 
+						colour=COLOUR_SUCCESS, timestamp=None)
 		
 		await ctx.send(embed=embed)
 
