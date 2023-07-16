@@ -15,14 +15,15 @@ from ..db import db
 
 OWNER_IDS = [643110945274593281]
 TOKEN_PATH = "./library/bot/token.txt"
-COGS = [path.split("\\")[-1][:-3] for path in glob("./library/cogs/*.py")]
+PATH_SEPARATOR = "/" # change to "\\" for Windows
+COGS = [path.split("/")[-1][:-3] for path in glob("./library/cogs/*.py")]
 IGNORE_EXCEPTIONS = (CommandNotFound, BadArgument)
 DEFAULT_PREFIX = "?"
 
 
 def get_prefix(bot, message):
 	prefix = DEFAULT_PREFIX
-	
+
 	if message.guild:
 		prefix = db.field("SELECT bot_prefix FROM guild WHERE id = ?", message.guild.id)
 
