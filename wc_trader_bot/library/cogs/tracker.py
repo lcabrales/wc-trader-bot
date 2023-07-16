@@ -141,7 +141,7 @@ class Tracker(Cog):
 
 		embed = Embed(
 			title=embed_title, 
-			description=f"List of pieces in {description_display_name} collection marked as {status}.", 
+			description=f"List of pieces in **{description_display_name}** collection marked as **{status}**.", 
 			colour=COLOUR_DEFAULT, 
 			timestamp=None
 		)
@@ -188,7 +188,7 @@ class Tracker(Cog):
 		
 		
 		embed_title = world_name
-		embed_description = f"Marked the following {world_name} pieces as {status} in your collection:"
+		embed_description = f"Marked the following **{world_name}** pieces as **{status}** in your collection:"
 		embed_colour = COLOUR_DEFAULT
 		embed = Embed(title=embed_title, description=embed_description, 
 						colour=embed_colour, timestamp=None)
@@ -237,7 +237,7 @@ class Tracker(Cog):
 				
 			db.commit()
 			
-			embed_description = f"Marked all the unnassigned pieces for the map {world_name} {map_name} as {status} in your collection."
+			embed_description = f"Marked all the unnassigned pieces for the map **{world_name} {map_name}** as **{status}** in your collection."
 			embed_colour = COLOUR_SUCCESS
 			embed_fields.append(
 				f"{status.capitalize()} pieces", 
@@ -246,7 +246,7 @@ class Tracker(Cog):
 			)
 
 		else:
-			embed_description = f"There were no unnassigned pieces for the map {world_name} {map_name} in your collection."
+			embed_description = f"There were no unnassigned pieces for the map **{world_name} {map_name}** in your collection."
 			embed_colour = COLOUR_DEFAULT
 
 		embed = Embed(title=world_name, description=embed_description, 
@@ -338,7 +338,7 @@ class Tracker(Cog):
 		if status_value == STATUS_NONE:
 			db.execute(MAP_REMOVE_ALL_PIECES_QUERY, owner.id, map_id)
 			
-			embed_description = f"Removed **all** the pieces for the map {world_name} {map_name} in your collection."
+			embed_description = f"Removed all the pieces for the map **{world_name} {map_name}** in your collection."
 		
 		else:
 			piece_ids = db.column("SELECT id FROM piece WHERE map_id = ?", map_id)
@@ -350,7 +350,7 @@ class Tracker(Cog):
 							status_value,
 							datetime.utcnow())
 		
-			embed_description = f"Marked **all** the pieces for the map {world_name} {map_name} as {status} in your collection."
+			embed_description = f"Marked all the pieces for the map **{world_name} {map_name}** as **{status}** in your collection."
 
 		db.commit()
 		
@@ -376,7 +376,7 @@ class Tracker(Cog):
 		db.execute(MAP_REMOVE_ALL_PIECES_STATUS_QUERY, owner.id, STATUS_OWNED, map_id)
 		db.commit()
 
-		embed_description = f"Set the map {world_name} {map_name} as completed and removed **all** its owned pieces in your collection."
+		embed_description = f"Set the map {world_name} {map_name} as completed and removed its pieces marked as **owned** in your collection."
 		embed = Embed(title=world_name, description=embed_description, 
 						colour=COLOUR_SUCCESS, timestamp=None)
 		
