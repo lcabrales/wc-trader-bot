@@ -1,5 +1,6 @@
 ### Custom ###
 token.txt
+token.dev
 
 ### Database ###
 *.accdb

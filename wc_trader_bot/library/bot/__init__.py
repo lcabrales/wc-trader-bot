@@ -14,9 +14,9 @@ from discord.ext.commands import when_mentioned_or, command, has_permissions
 from ..db import db
 
 OWNER_IDS = [643110945274593281]
-TOKEN_PATH = "./library/bot/token.txt"
-PATH_SEPARATOR = "/" # change to "\\" for Windows
-COGS = [path.split("/")[-1][:-3] for path in glob("./library/cogs/*.py")]
+TOKEN_PATH = "./library/bot/token.txt" # token.txt for prod, token.dev for dev
+PATH_SEPARATOR = "/" # "\\" for Windows, "/" for linux
+COGS = [path.split(PATH_SEPARATOR)[-1][:-3] for path in glob("./library/cogs/*.py")]
 IGNORE_EXCEPTIONS = (CommandNotFound, BadArgument)
 DEFAULT_PREFIX = "?"
 
