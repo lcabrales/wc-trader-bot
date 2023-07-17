@@ -312,9 +312,9 @@ class Tracker(Cog):
 			await ctx.send(f'Bad argument: {piece_name}')
 			raise BadArgument
 		
-		user_ids = db.record(PIECES_SEARCH_QUERY, world_id, piece_id, status_value)
+		user_ids = db.column(PIECES_SEARCH_QUERY, world_id, piece_id, status_value)
 
-		embed_title = f"Server search for {world_name} {piece_name}"
+		embed_title = f"Searching for {world_name} {piece_name} - **{status}**"
 		embed_description = None
 		embed_colour = COLOUR_DEFAULT
 		embed_fields=[]
@@ -328,7 +328,7 @@ class Tracker(Cog):
 			embed_description = f"{len(user_names)} result{'s' if len(user_names) > 1 else ''} found."
 			
 			embed_fields.append((
-				f"{status.capitalize()} pieces", 
+				f"{status.capitalize()}", 
 				self.array_to_string(user_names), 
 				False
 			))
