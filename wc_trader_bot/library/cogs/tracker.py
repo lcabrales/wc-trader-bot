@@ -312,7 +312,7 @@ class Tracker(Cog):
 			await ctx.send(f'Bad argument: {piece_name}')
 			raise BadArgument
 		
-		user_ids = db.records(PIECES_SEARCH_QUERY, world_id, piece_id, status_value)
+		user_ids = db.record(PIECES_SEARCH_QUERY, world_id, piece_id, status_value)
 
 		embed_title = f"Server search for {world_name} {piece_name}"
 		embed_description = None
