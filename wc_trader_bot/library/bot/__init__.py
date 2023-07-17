@@ -150,7 +150,7 @@ class Bot(BotBase):
 
 	async def on_ready(self):
 		if not self.ready:
-			self.stdout_channel = self.get_channel(1128443141641482341) # ENV_DEV only
+			self.stdout_channel = self.get_channel(1130566439988891819) # ENV_DEV only
 
 			self.scheduler.start()
 

@@ -39,6 +39,15 @@ WHERE map.world_id = ? AND user_piece.user_id = ? AND user_piece.status = ?
 ORDER BY map.name, piece.order_by ASC
 """
 
+PIECES_STATUS_ALL_USERS_QUERY = """
+SELECT piece.name AS piece_name
+FROM piece
+JOIN map ON piece.map_id = map.id
+JOIN user_piece ON piece.id = user_piece.piece_id
+WHERE map.world_id = ? AND user_piece.status = ? 
+ORDER BY map.name, piece.order_by ASC
+"""
+
 PIECE_USER_REMOVE_QUERY = """
 DELETE FROM user_piece
 WHERE user_id = ?
@@ -303,7 +312,7 @@ class Tracker(Cog):
 			await ctx.send(f'Bad argument: {piece_name}')
 			raise BadArgument
 		
-		user_ids = db.record(PIECES_SEARCH_QUERY, world_id, piece_id, status_value)
+		user_ids = db.records(PIECES_SEARCH_QUERY, world_id, piece_id, status_value)
 
 		embed_title = f"Server search for {world_name} {piece_name}"
 		embed_description = None
@@ -324,6 +333,37 @@ class Tracker(Cog):
 				False
 			))
 		
+		else:
+			embed_description = "No results found."
+
+		embed = Embed(title=embed_title, description=embed_description, 
+							colour=embed_colour, timestamp=None)
+		
+		for name, value, inline in embed_fields:
+			embed.add_field(name=name, value=value, inline=inline)
+
+		await ctx.send(embed=embed)
+ 
+	@piece.command(name="seekingall")
+	async def list_all_seeking(self, ctx):
+		status_value = STATUS_SEEKING
+		
+		world_abbv_list = db.column("SELECT abbv FROM world")
+
+		embed_fields=[]
+		for world_abbv in world_abbv_list:
+			(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
+			pieces_seeking = db.column(PIECES_STATUS_ALL_USERS_QUERY, world_id, status_value)
+			
+			if pieces_seeking:
+				embed_fields.append((world_name, self.array_to_string(pieces_seeking), False))
+
+		embed_title = f"Seeking pieces"
+		embed_description = None
+		embed_colour = COLOUR_DEFAULT
+
+		if embed_fields:
+			embed_description = f"This is a list of all the pieces that at least one user is seeking."
 		else:
 			embed_description = "No results found."
 
