@@ -84,7 +84,7 @@ class Meta(Cog):
 			("Uptime", uptime, True),
 			("CPU time", cpu_time, True),
 			("Memory usage", f"{mem_usage:,.3f} / {mem_total:,.0f} MiB ({mem_of_total:.0f}%)", True),
-			("Users", f"{self.bot.guild.member_count:,}", True)
+			# ("Users", f"{self.bot.guild.member_count:,}", True)
 		]
 
 		for name, value, inline in fields:
