@@ -128,11 +128,9 @@ class Tracker(Cog):
 			(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
 			pieces_user = db.column(PIECES_USER_STATUS_QUERY, world_id, owner.id, status_value)
 			
-			field_description = "None"
 			if pieces_user:
-				field_description = self.array_to_string(pieces_user)
+				fields.append((world_name, self.array_to_string(pieces_user), False))
 			
-			fields.append((world_name, field_description, False))
 		
 		embed_title = "Pieces"
 		if status_value is STATUS_OWNED:
