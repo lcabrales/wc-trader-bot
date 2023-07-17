@@ -13,18 +13,27 @@ from discord.ext.commands import when_mentioned_or, command, has_permissions
 
 from ..db import db
 
+
+ENV_DEV = "dev"
+ENV_PROD = "prod"
+
+
+# IMPORTANT: CHANGE TO ENV_PROD BEFORE COMMITING/PUSHING
+CURRENT_ENV = ENV_PROD
+
+
 OWNER_IDS = [643110945274593281]
-TOKEN_PATH = "./library/bot/token.txt" # token.txt for prod, token.dev for dev
-PATH_SEPARATOR = "/" # "\\" for Windows, "/" for linux
+TOKEN_PATH = "./library/bot/token.txt" if CURRENT_ENV == ENV_PROD else "./library/bot/token.dev"  # token.txt for prod, token.dev for dev
+PATH_SEPARATOR = "/" if CURRENT_ENV == ENV_PROD else "\\" # "\\" for Windows, "/" for linux
 COGS = [path.split(PATH_SEPARATOR)[-1][:-3] for path in glob("./library/cogs/*.py")]
 IGNORE_EXCEPTIONS = (CommandNotFound, BadArgument)
-DEFAULT_PREFIX = "?"
+DEFAULT_PREFIX = "?" if CURRENT_ENV == ENV_PROD else "test." # "test." for dev mode
 
 
 def get_prefix(bot, message):
 	prefix = DEFAULT_PREFIX
 
-	if message.guild:
+	if message.guild and CURRENT_ENV != ENV_DEV:
 		prefix = db.field("SELECT bot_prefix FROM guild WHERE id = ?", message.guild.id)
 
 	return when_mentioned_or(prefix)(bot, message)
@@ -77,6 +86,12 @@ class Bot(BotBase):
 					((guild.id,) for guild in self.guilds))
         
 		db.commit()
+
+	async def send_stdout(self, message):
+		if CURRENT_ENV == ENV_PROD:
+			return
+		
+		await self.stdout_channel.send(message)
         
 	def run(self, version):
 		self.VERSION = version
@@ -111,7 +126,7 @@ class Bot(BotBase):
 			channel = args[0]
 			await channel.send("Something went wrong.")
             
-		# await self.stdout_channel.send("An error occurred.")
+		await self.send_stdout("An error occurred.")
 
 		raise
 
@@ -135,7 +150,8 @@ class Bot(BotBase):
 
 	async def on_ready(self):
 		if not self.ready:
-			# self.stdout_channel = self.get_channel(1128443141641482341)
+			self.stdout_channel = self.get_channel(1128443141641482341) # ENV_DEV only
+
 			self.scheduler.start()
 
 			self.update_db()
@@ -143,7 +159,8 @@ class Bot(BotBase):
 			while not self.cogs_ready.all_ready():
 				await sleep(0.5)
 
-			# await self.stdout_channel.send("Now online!")
+			await self.send_stdout("Now online!")
+
 			self.ready = True
 			print("bot ready")
 			
