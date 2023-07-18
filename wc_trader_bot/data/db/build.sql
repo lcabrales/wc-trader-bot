@@ -973,3 +973,31 @@ CREATE TABLE IF NOT EXISTS user_map_completion (
 	FOREIGN KEY (map_id) REFERENCES map (id)
 	FOREIGN KEY (user_id) REFERENCES user (id)
 );
+
+-- Migration v1.1.0
+CREATE TABLE IF NOT EXISTS eternal_type (
+	id TEXT PRIMARY KEY,
+	name TEXT
+);
+
+INSERT OR IGNORE INTO eternal_type (id, name)
+VALUES
+	('d6e2f67d-1756-4a6d-918c-89408f13e252', 'countdown_summary');
+
+CREATE TABLE IF NOT EXISTS eternal (
+	message_id INTEGER PRIMARY KEY,
+	channel_id INTEGER,
+	guild_id INTEGER,
+	eternal_type_id TEXT,
+	FOREIGN KEY (guild_id) REFERENCES guild (id)
+	FOREIGN KEY (eternal_type_id) REFERENCES eternal_type (id)
+	UNIQUE(guild_id,eternal_type_id)
+);
+
+CREATE TABLE IF NOT EXISTS eternal_params (
+	id TEXT PRIMARY KEY,
+	key TEXT,
+	value TEXT,
+	eternal_id TEXT,
+	FOREIGN KEY (eternal_id) REFERENCES eternal (message_id)
+);
