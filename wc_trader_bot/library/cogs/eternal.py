@@ -8,7 +8,7 @@ from discord import Member, Embed
 from discord.ext.tasks import loop
 from discord.ext.commands import Cog
 from discord.ext.commands import BadArgument, BucketType
-from discord.ext.commands import command, cooldown, group
+from discord.ext.commands import command, cooldown, group, has_permissions
 
 from ..db import db
 
@@ -46,6 +46,7 @@ class Eternal(Cog):
 		return ', '.join(array)
 
 	@group(invoke_without_command=True)
+	@has_permissions(manage_guild=True)
 	async def eternal(self, ctx):
 		await ctx.send(f'Please specify the piece command')
 
@@ -104,6 +105,7 @@ class Eternal(Cog):
 		return embed
 	
 	@eternal.command(name="countdown")
+	@has_permissions(manage_guild=True)
 	async def show_countdown(self, ctx, threshold: Optional[int] = DEFAULT_COUNTDOWN_THRESHOLD):
 		if threshold < 1 or threshold > 20:
 			await ctx.send(f'Bad argument: {threshold} - must be between 1 and 20')
