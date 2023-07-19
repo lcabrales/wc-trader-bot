@@ -69,13 +69,9 @@ class Eternal(Cog):
 
 			for map_id in world_map_list:
 				pieces_seeking = db.records(COUNTDOWN_QUERY, map_id, STATUS_SEEKING)
-				
+
 				if not pieces_seeking:
 					continue
-
-				if previous_world_id and previous_world_id != world_id:
-					# extra space between different worlds
-					embed_description += "\n" 
 
 				# Sort the data based on the third value (user_id) for groupby to work properly
 				sorted_data = sorted(pieces_seeking, key=lambda x: x[2])
@@ -89,6 +85,11 @@ class Eternal(Cog):
 				for user_id, user_data in user_id_arrays.items():
 					if not user_data or len(user_data) > threshold:
 						continue
+
+					if previous_world_id and previous_world_id != world_id:
+						# extra space between different worlds
+						embed_description += "\n"
+						previous_world_id = None
 
 					embed_description += f"* {world_name} "
 
