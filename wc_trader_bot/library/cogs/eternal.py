@@ -104,7 +104,7 @@ class Eternal(Cog):
 
 		return embed
 	
-	@eternal.command(name="countdown")
+	@eternal.command(name="countdown", aliases=["cd"])
 	@has_permissions(manage_guild=True)
 	async def show_countdown(self, ctx, threshold: Optional[int] = DEFAULT_COUNTDOWN_THRESHOLD):
 		if threshold < 1 or threshold > 20:
@@ -144,6 +144,33 @@ class Eternal(Cog):
 	     	str(uuid4()), THRESHOLD_KEY, threshold, message.id)
 		db.commit()
 
+	@eternal.command(name="countdownrm", aliases=["cdrm"])
+	@has_permissions(manage_guild=True)
+	async def remove_countdown(self, ctx):
+		# only one message per guild of each type
+		existing_message_id = db.field("SELECT message_id FROM eternal WHERE guild_id = ? AND eternal_type_id = ?", 
+			ctx.message.guild.id, TYPE_COUNTDOWN)
+
+		# delete the previous message so we stop updating it
+		if existing_message_id:
+			channel_id = db.field("SELECT channel_id FROM eternal WHERE message_id = ?", existing_message_id)
+
+			try:
+				channel = self.client.get_channel(channel_id)
+
+				if channel:
+					message = await channel.fetch_message(existing_message_id)
+
+				await message.delete()
+			except Exception as exc:
+				print(f"Caught exception at show_countdow {exc}")
+			
+			db.execute("DELETE FROM eternal WHERE message_id = ?", existing_message_id)
+
+			db.commit()
+
+		# delete original author message (the one that issued the command)
+		await ctx.message.delete()
 
 	@loop(minutes=COUNTDOWN_MINUTES_DELAY)
 	async def countdown(self):
