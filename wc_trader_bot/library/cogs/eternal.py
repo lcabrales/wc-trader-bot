@@ -4,10 +4,12 @@ from typing import Optional
 from datetime import datetime
 from uuid import uuid4
 
+from itertools import groupby
+
 from discord import Member, Embed
 from discord.ext.tasks import loop
 from discord.ext.commands import Cog
-from discord.ext.commands import BadArgument, BucketType
+from discord.ext.commands import BadArgument, CheckFailure
 from discord.ext.commands import command, cooldown, group, has_permissions
 
 from ..db import db
@@ -26,12 +28,12 @@ THRESHOLD_KEY = "threshold"
 COUNTDOWN_MINUTES_DELAY = 60
 
 COUNTDOWN_QUERY = """
-SELECT piece.id, piece.name, user_piece.user_id AS piece_name
+SELECT piece.id, piece.name, user_piece.user_id AS user_id
 FROM piece
 JOIN map ON piece.map_id = map.id
 JOIN user_piece ON piece.id = user_piece.piece_id
 WHERE map.id = ? AND user_piece.status = ? 
-ORDER BY map.name, piece.order_by ASC
+ORDER BY map.name, piece.order_by ASC;
 """
 
 COLOUR_DEFAULT = 0x0058F2
@@ -50,6 +52,11 @@ class Eternal(Cog):
 	async def eternal(self, ctx):
 		await ctx.send(f'Please specify the piece command')
 
+	@eternal.error
+	async def eternal_error(self, ctx, exc):
+		if isinstance(exc, CheckFailure):
+			await ctx.send("You need the Manage Server permission to do that.")
+
 	async def create_countdown_embed(self, threshold):
 		world_abbv_list = db.column("SELECT abbv FROM world")
 
@@ -62,31 +69,42 @@ class Eternal(Cog):
 
 			for map_id in world_map_list:
 				pieces_seeking = db.records(COUNTDOWN_QUERY, map_id, STATUS_SEEKING)
-				print(pieces_seeking)
 				
-				if not pieces_seeking or len(pieces_seeking) > threshold:
+				if not pieces_seeking:
 					continue
 
 				if previous_world_id and previous_world_id != world_id:
 					# extra space between different worlds
 					embed_description += "\n" 
 
-				embed_description += f"* {world_name} "
+				# Sort the data based on the third value (user_id) for groupby to work properly
+				sorted_data = sorted(pieces_seeking, key=lambda x: x[2])
 
-				piece_names = []
-				for piece in pieces_seeking:
-					piece_names.append(piece[1])
+				# Group the data by the third value (user_id) and create separate arrays for each user_id
+				user_id_arrays = {}
+				for key, group in groupby(sorted_data, key=lambda x: x[2]):
+					user_id_arrays[key] = list(group)
 
-				embed_description += f"{self.array_to_string(piece_names)} "
+				# Now iterate through user_id_arrays for each user_id
+				for user_id, user_data in user_id_arrays.items():
+					if len(user_data) > threshold:
+						continue
 
-				try:
-					member = await self.client.fetch_user(piece[2])
-					embed_description += f"({member.display_name})"
-				except Exception as err:
-					print(err)
-					pass
+					embed_description += f"* {world_name} "
+
+					piece_names = []
+					for data_item in user_data:
+						piece_names.append(data_item[1])
+
+					embed_description += f"{self.array_to_string(piece_names)} "
+
+					try:
+						member = await self.client.fetch_user(user_id)
+						embed_description += f"({member.display_name})"
+					except Exception as exc:
+						print(f"Caught exception at show_countdow {exc}")
 				
-				embed_description += "\n"
+					embed_description += "\n"
 
 			previous_world_id = world_id
 
@@ -133,6 +151,7 @@ class Eternal(Cog):
 			
 			db.execute("DELETE FROM eternal WHERE message_id = ?", existing_message_id)
 
+		print("updating eternal countdown...")
 		message = await ctx.send(embed=embed)
 
 		# delete original author message (the one that issued the command)
@@ -143,6 +162,11 @@ class Eternal(Cog):
 		db.execute("INSERT INTO eternal_params (id, key, value, eternal_id) VALUES (?, ?, ?, ?)",
 	     	str(uuid4()), THRESHOLD_KEY, threshold, message.id)
 		db.commit()
+
+	@show_countdown.error
+	async def show_countdown_error(self, ctx, exc):
+		if isinstance(exc, CheckFailure):
+			await ctx.send("You need the Manage Server permission to do that.")
 
 	@eternal.command(name="countdownrm", aliases=["cdrm"])
 	@has_permissions(manage_guild=True)
@@ -171,6 +195,11 @@ class Eternal(Cog):
 
 		# delete original author message (the one that issued the command)
 		await ctx.message.delete()
+
+	@remove_countdown.error
+	async def remove_countdown_error(self, ctx, exc):
+		if isinstance(exc, CheckFailure):
+			await ctx.send("You need the Manage Server permission to do that.")
 
 	@loop(minutes=COUNTDOWN_MINUTES_DELAY)
 	async def countdown(self):
