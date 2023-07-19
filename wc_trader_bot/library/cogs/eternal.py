@@ -100,7 +100,7 @@ class Eternal(Cog):
 					embed_description += f"{self.array_to_string(piece_names)} "
 
 					try:
-						member = await self.client.fetch_user(user_id)
+						member = self.client.get_user(user_id)
 						embed_description += f"({member.display_name})"
 					except Exception as exc:
 						print(f"Caught exception at show_countdow {exc}")
