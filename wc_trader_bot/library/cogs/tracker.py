@@ -200,8 +200,8 @@ class Tracker(Cog):
 
 			# remove the user piece from seeking if it was set as owned
 			if status_value == STATUS_OWNED:
-				seeking_user_piece_id = db.field("SELECT up.id FROM piece p INNER JOIN user_piece up ON p.id = up.piece_id WHERE p.id = ? AND status = ?", 
-			  			piece_id, STATUS_SEEKING)
+				seeking_user_piece_id = db.field("SELECT up.id FROM piece p INNER JOIN user_piece up ON p.id = up.piece_id WHERE p.id = ? AND status = ? AND up.user_id = ?", 
+			  			piece_id, STATUS_SEEKING, owner.id)
 				
 				if seeking_user_piece_id:
 					db.execute("DELETE FROM user_piece WHERE id = ?", seeking_user_piece_id)
