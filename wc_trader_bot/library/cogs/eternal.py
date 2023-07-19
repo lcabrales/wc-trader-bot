@@ -87,7 +87,7 @@ class Eternal(Cog):
 
 				# Now iterate through user_id_arrays for each user_id
 				for user_id, user_data in user_id_arrays.items():
-					if len(user_data) > threshold:
+					if not user_data or len(user_data) > threshold:
 						continue
 
 					embed_description += f"* {world_name} "
