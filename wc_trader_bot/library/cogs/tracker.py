@@ -92,6 +92,15 @@ AND piece_id IN (
 );
 """
 
+MAP_SEARCH_QUERY = """
+SELECT DISTINCT user_piece.user_id
+FROM piece
+JOIN map ON piece.map_id = map.id
+JOIN user_piece ON piece.id = user_piece.piece_id
+WHERE map.id = ? AND user_piece.status = ? 
+ORDER BY map.name, piece.order_by ASC;
+"""
+
 class Tracker(Cog):
 	def __init__(self, client):
 		self.client = client
@@ -102,6 +111,10 @@ class Tracker(Cog):
 	@staticmethod
 	def array_to_string(array):
 		return ', '.join(array)
+	
+	@staticmethod
+	def plurals_results(results_count):
+		return f"{results_count} result{'s' if results_count > 1 else ''} found."
 
 	# # # # # # # #
 	# Piece commands
@@ -125,9 +138,7 @@ class Tracker(Cog):
 
 		if world_abbv == "ALL":
 			worlds = db.column("SELECT abbv FROM world")
-
-			for world in worlds:
-				world_abbv_list.append(world)
+			world_abbv_list.extend(worlds)
 
 		else:
 			world_abbv_list.append(world_abbv)
@@ -322,10 +333,10 @@ class Tracker(Cog):
 		if user_ids:
 			user_names=[]
 			for user_id in user_ids:
-				user = await self.client.fetch_user(user_id)
+				user = self.client.get_user(user_id)
 				user_names.append(user.display_name)
 
-			embed_description = f"{len(user_names)} result{'s' if len(user_names) > 1 else ''} found."
+			embed_description = self.plurals_results(len(user_names))
 			
 			embed_fields.append((
 				f"{status.capitalize()}", 
@@ -447,6 +458,66 @@ class Tracker(Cog):
 		embed = Embed(title=world_name, description=embed_description, 
 						colour=COLOUR_SUCCESS, timestamp=None)
 		
+		await ctx.send(embed=embed)
+
+	@map.command(name="search")
+	async def search_map(self, ctx, status: Literal['owned', 'seeking', 'trade'], world_abbv: to_upper, map_name: Optional[Literal['1', '2', '3']] = None):
+		status_value = COMMAND_STATUS_MAPPING.get(status, None)
+		if status_value is None:
+			await ctx.send(f'Bad argument: {status}')
+			raise BadArgument
+
+		(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
+		if world_id is None or world_name is None:
+			await ctx.send(f'Bad argument: {world_abbv}')
+			raise BadArgument
+		
+		total_results = 0
+		map_id_list = []
+		if map_name:
+			map_id = db.field("SELECT id FROM map WHERE name = ? AND world_id = ?", map_name, world_id)
+			map_id_list.append(map_id)
+		else:
+			map_ids = db.column("SELECT id FROM map WHERE world_id = ?", world_id)
+			map_id_list.extend(map_ids)
+
+		print(map_id_list)
+
+		embed_fields = []
+		for map_id in map_id_list:
+			map_name = db.field("SELECT name FROM map WHERE id = ?", map_id)
+			field_title = f"{world_name} {map_name}"
+
+			user_ids = db.column(MAP_SEARCH_QUERY, map_id, status_value)
+
+			user_display_names = []
+			for user_id in user_ids:
+				try:
+					member = self.client.get_user(user_id)
+					user_display_names.append(member.display_name)
+				except Exception as exc:
+					print(f"Caught exception at show_countdow {exc}")
+					continue
+			
+			total_results += len(user_display_names)
+
+			field_value = "None" if not user_display_names else self.array_to_string(user_display_names)
+
+			embed_fields.append((field_title, field_value, False))
+
+
+		embed_title = f"Searching for users on {world_name} - **{status}**"
+		embed_description = None
+		embed_colour = COLOUR_DEFAULT
+
+		embed_description = self.plurals_results(total_results)
+
+		embed = Embed(title=embed_title, description=embed_description, 
+							colour=embed_colour, timestamp=None)
+		
+		for name, value, inline in embed_fields:
+			embed.add_field(name=name, value=value, inline=inline)
+
 		await ctx.send(embed=embed)
 
 	@Cog.listener()

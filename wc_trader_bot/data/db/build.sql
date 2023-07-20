@@ -1001,3 +1001,8 @@ CREATE TABLE IF NOT EXISTS eternal_params (
 	eternal_id TEXT,
 	FOREIGN KEY (eternal_id) REFERENCES eternal (message_id)
 );
+
+-- Migration v1.1.2
+INSERT OR IGNORE INTO eternal_type (id, name)
+VALUES
+	('8712a0fa-0eae-47ef-9f5e-023e30e35ce1', 'users_map_count');

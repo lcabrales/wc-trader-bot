@@ -21,11 +21,13 @@ STATUS_OWNED = 1
 STATUS_TRADE = 2
 
 TYPE_COUNTDOWN = "d6e2f67d-1756-4a6d-918c-89408f13e252"
+TYPE_USERS_MAP_COUNT = "8712a0fa-0eae-47ef-9f5e-023e30e35ce1"
 
 DEFAULT_COUNTDOWN_THRESHOLD = 3
 THRESHOLD_KEY = "threshold"
 
 COUNTDOWN_MINUTES_DELAY = 60
+USERS_MAP_COUNT_MINUTES_DELAY = 60
 
 COUNTDOWN_QUERY = """
 SELECT piece.id, piece.name, user_piece.user_id AS user_id
@@ -34,6 +36,15 @@ JOIN map ON piece.map_id = map.id
 JOIN user_piece ON piece.id = user_piece.piece_id
 WHERE map.id = ? AND user_piece.status = ? 
 ORDER BY map.name, piece.order_by ASC;
+"""
+
+USERS_MAP_COUNT_QUERY = """
+SELECT world.name AS world_name, map.name AS map_name, COUNT(DISTINCT user_piece.user_id) AS users_count
+FROM world
+JOIN map ON world.id = map.world_id
+LEFT JOIN piece ON map.id = piece.map_id
+LEFT JOIN user_piece ON piece.id = user_piece.piece_id AND user_piece.status = ?
+GROUP BY world.name, map.name;
 """
 
 COLOUR_DEFAULT = 0x0058F2
@@ -46,6 +57,13 @@ class Eternal(Cog):
 	@staticmethod
 	def array_to_string(array):
 		return ', '.join(array)
+	
+	@staticmethod
+	def plurals(count, term):
+		if not count:
+			return "**None**"
+		
+		return f"**{count} {term}{'s' if count > 1 else ''}**"
 
 	@group(invoke_without_command=True)
 	@has_permissions(manage_guild=True)
@@ -57,13 +75,17 @@ class Eternal(Cog):
 		if isinstance(exc, CheckFailure):
 			await ctx.send("You need the Manage Server permission to do that.")
 
+	
+	# # # # # #
+	# COUNTDOWN
 	async def create_countdown_embed(self, threshold):
-		world_abbv_list = db.column("SELECT abbv FROM world")
+		world_ids = db.column("SELECT id FROM world ORDER BY name")
 
-		embed_description = ""
+		embed_description = f"Shows the users seeking {threshold} or less pieces of a certain map.\n\n"
+
 		previous_world_id = None
-		for world_abbv in world_abbv_list:
-			(world_id, world_name) = db.record("SELECT id, name FROM world WHERE abbv = ?", world_abbv)
+		for world_id in world_ids:
+			world_name = db.field("SELECT name FROM world WHERE id = ?", world_id)
 
 			world_map_list = db.column("SELECT id FROM map WHERE world_id = ?", world_id)
 
@@ -100,7 +122,7 @@ class Eternal(Cog):
 					embed_description += f"{self.array_to_string(piece_names)} "
 
 					try:
-						member = await self.client.fetch_user(user_id)
+						member = self.client.get_user(user_id)
 						embed_description += f"({member.display_name})"
 					except Exception as exc:
 						print(f"Caught exception at show_countdow {exc}")
@@ -230,12 +252,149 @@ class Eternal(Cog):
 				print(f"Caught exception at countdown {exc}")
 				continue
 
+	# # # # # #
+	# User's Maps Count
+	async def create_users_maps_embed(self):
+		embed_description = "Represents how many users are seeking at least one piece of a certain map.\n\n"
+
+		map_count_result = db.records(USERS_MAP_COUNT_QUERY, STATUS_SEEKING)
+
+		if not map_count_result:
+			return
+
+		current_world = None
+		for result in map_count_result:
+			if result[2] == 0:
+				continue
+
+			if current_world != result[0]:
+				if current_world is not None:
+					embed_description += "\n"  # Line break after each world
+				current_world = result[0]
+
+			embed_description += f"* {result[0]} {result[1]}:  {self.plurals(result[2], 'user')}\n"
+
+		embed_title = f"Trader's Map Count"
+		embed_colour = COLOUR_DEFAULT
+		embed_footer = "Last updated"
+
+		embed = Embed(
+			title=embed_title, 
+			description=embed_description, 
+			colour=embed_colour, 
+			timestamp=datetime.now()
+		)
+		embed.set_footer(text=embed_footer)
+
+		return embed
+	
+	@eternal.command(name="mapcount")
+	@has_permissions(manage_guild=True)
+	async def show_users_map_count(self, ctx):
+		embed = await self.create_users_maps_embed()
+
+		# only one message per guild of each type
+		existing_message_id = db.field("SELECT message_id FROM eternal WHERE guild_id = ? AND eternal_type_id = ?", 
+			ctx.message.guild.id, TYPE_USERS_MAP_COUNT)
+
+		# delete the previous message so we stop updating it
+		if existing_message_id:
+			channel_id = db.field("SELECT channel_id FROM eternal WHERE message_id = ?", existing_message_id)
+
+			try:
+				channel = self.client.get_channel(channel_id)
+
+				if channel:
+					message = await channel.fetch_message(existing_message_id)
+
+				await message.delete()
+			except Exception as exc:
+				print(f"Caught exception at show_countdow {exc}")
+			
+			db.execute("DELETE FROM eternal WHERE message_id = ?", existing_message_id)
+
+		print("updating eternal users map count...")
+		message = await ctx.send(embed=embed)
+
+		# delete original author message (the one that issued the command)
+		await ctx.message.delete()
+
+		db.execute("INSERT INTO eternal (message_id, channel_id, guild_id, eternal_type_id) VALUES (?, ?, ?, ?);", 
+	     	message.id, message.channel.id, message.guild.id, TYPE_USERS_MAP_COUNT)
+		db.commit()
+
+	@show_users_map_count.error
+	async def show_users_map_count_error(self, ctx, exc):
+		if isinstance(exc, CheckFailure):
+			await ctx.send("You need the Manage Server permission to do that.")
+
+	@eternal.command(name="mapcountrm")
+	@has_permissions(manage_guild=True)
+	async def remove_users_map_count(self, ctx):
+		# only one message per guild of each type
+		existing_message_id = db.field("SELECT message_id FROM eternal WHERE guild_id = ? AND eternal_type_id = ?", 
+			ctx.message.guild.id, TYPE_USERS_MAP_COUNT)
+
+		# delete the previous message so we stop updating it
+		if existing_message_id:
+			channel_id = db.field("SELECT channel_id FROM eternal WHERE message_id = ?", existing_message_id)
+
+			try:
+				channel = self.client.get_channel(channel_id)
+
+				if channel:
+					message = await channel.fetch_message(existing_message_id)
+
+				await message.delete()
+			except Exception as exc:
+				print(f"Caught exception at show_countdow {exc}")
+			
+			db.execute("DELETE FROM eternal WHERE message_id = ?", existing_message_id)
+
+			db.commit()
+
+		# delete original author message (the one that issued the command)
+		await ctx.message.delete()
+
+	@remove_users_map_count.error
+	async def remove_users_map_count_error(self, ctx, exc):
+		if isinstance(exc, CheckFailure):
+			await ctx.send("You need the Manage Server permission to do that.")
+
+	@loop(minutes=USERS_MAP_COUNT_MINUTES_DELAY)
+	async def users_map_count(self):
+		message_ids = db.column("SELECT message_id FROM eternal WHERE eternal_type_id = ?", TYPE_USERS_MAP_COUNT)
+
+		if not message_ids:
+			return
+
+		for message_id in message_ids:
+			try:
+				channel_id = db.field("SELECT channel_id FROM eternal WHERE message_id = ?", message_id)
+
+				channel = self.client.get_channel(channel_id)
+
+				if not channel:
+					continue
+
+				message = await channel.fetch_message(message_id)
+
+				if not message:
+					continue
+
+				embed = await self.create_users_maps_embed()
+				await message.edit(embed=embed)
+			except Exception as exc:
+				print(f"Caught exception at countdown {exc}")
+				continue
+
 	@Cog.listener()
 	async def on_ready(self):
 		if not self.client.ready:
 			self.client.cogs_ready.ready_up("eternal")
 		
 		self.countdown.start()
+		self.users_map_count.start()
 
 async def setup(client):
 	await client.add_cog(Eternal(client))
