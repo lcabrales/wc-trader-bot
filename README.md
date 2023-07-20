@@ -173,6 +173,33 @@ Pieces with other status, such as seeking or trade, will not be affected.
 
 ```?map complete NC 3```
 
+## ?map search
+
+Use this to search for all users that have at least one piece set to the specified `status` for the specified map.
+
+### Syntax
+
+```?map search {status} {world} {map}```
+
+* `{status}` - One of `owned`, `seeking`, `trade`.
+* `{world}` - Two-letter world abbreviation (check the World Abbreviations section).
+* `{map}` - Map number. Example: `1`. Optional.
+
+### Examples
+
+* To search for all users that own any piece of any KI map:
+
+```?map search owned KI```
+
+* To search for all users that own any piece of FL 3:
+
+```?map search owned KI```
+
+* To search for all users that are seeking any piece of any HW map:
+
+```?map search seeking HW```
+
+
 # World Abbreviations
 
 | World Name        | Abbreviation |
