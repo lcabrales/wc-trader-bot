@@ -333,8 +333,12 @@ class Tracker(Cog):
 		if user_ids:
 			user_names=[]
 			for user_id in user_ids:
-				user = self.client.get_user(user_id)
-				user_names.append(user.display_name)
+				try:
+					user = self.client.get_user(user_id)
+					user_names.append(user.display_name)
+				except Exception as exc:
+					print(f"Caught exception at search {exc} - user_id: {user_id}")
+					continue
 
 			embed_description = self.plurals_results(len(user_names))
 			
