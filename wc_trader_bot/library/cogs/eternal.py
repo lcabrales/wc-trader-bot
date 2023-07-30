@@ -39,7 +39,7 @@ ORDER BY map.name, piece.order_by ASC;
 """
 
 USERS_MAP_COUNT_QUERY = """
-SELECT world.name AS world_name, map.name AS map_name, COUNT(DISTINCT user_piece.user_id) AS users_count
+SELECT world.name AS world_name, map.name AS map_name, GROUP_CONCAT(DISTINCT user_piece.user_id) AS user_ids
 FROM world
 JOIN map ON world.id = map.world_id
 LEFT JOIN piece ON map.id = piece.map_id
@@ -255,7 +255,7 @@ class Eternal(Cog):
 	# # # # # #
 	# User's Maps Count
 	async def create_users_maps_embed(self):
-		embed_description = "Represents how many users are seeking at least one piece of a certain map.\n\n"
+		embed_description = "Users that are seeking at least one piece of a certain map.\n\n"
 
 		map_count_result = db.records(USERS_MAP_COUNT_QUERY, STATUS_SEEKING)
 
@@ -263,16 +263,29 @@ class Eternal(Cog):
 			return
 
 		current_world = None
-		for result in map_count_result:
-			if result[2] == 0:
+		for row in map_count_result:
+			world_name, map_name, user_ids_str = row
+
+			user_ids = [int(user_id) for user_id in user_ids_str.split(',')] if user_ids_str else []
+
+			if not user_ids:
 				continue
 
-			if current_world != result[0]:
+			if current_world != world_name:
 				if current_world is not None:
 					embed_description += "\n"  # Line break after each world
-				current_world = result[0]
+				current_world = world_name
 
-			embed_description += f"* {result[0]} {result[1]}:  {self.plurals(result[2], 'user')}\n"
+			user_names = []
+			for user_id in user_ids:
+				try:
+					member = self.client.get_user(user_id)
+					user_names.append(member.display_name)
+				except Exception as exc:
+					print(f"Caught exception at show_countdow {exc}")
+					continue
+
+			embed_description += f"* **{world_name} {map_name}:** {self.array_to_string(user_names)}\n"
 
 		embed_title = f"Trader's Map Count"
 		embed_colour = COLOUR_DEFAULT
