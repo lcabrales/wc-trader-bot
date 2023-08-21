@@ -68,7 +68,7 @@ class Eternal(Cog):
 	@group(invoke_without_command=True)
 	@has_permissions(manage_guild=True)
 	async def eternal(self, ctx):
-		await ctx.send(f'Please specify the piece command')
+		await ctx.send(f'Please specify the eternal command')
 
 	@eternal.error
 	async def eternal_error(self, ctx, exc):
