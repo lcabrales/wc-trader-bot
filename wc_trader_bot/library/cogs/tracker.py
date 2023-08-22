@@ -315,6 +315,8 @@ class Tracker(Cog):
 			await ctx.send(f'Bad argument: {world_abbv}')
 			raise BadArgument
 		
+		guild = ctx.message.guild
+		
 		map_name = piece_name[0]
 		map_id = db.field("SELECT id FROM map WHERE name = ? AND world_id = ?", map_name, world_id)
 		
@@ -334,7 +336,7 @@ class Tracker(Cog):
 			user_names=[]
 			for user_id in user_ids:
 				try:
-					user = self.client.get_user(user_id)
+					user = guild.get_member(user_id)
 					user_names.append(user.display_name)
 				except Exception as exc:
 					print(f"Caught exception at search {exc} - user_id: {user_id}")
@@ -476,6 +478,8 @@ class Tracker(Cog):
 			await ctx.send(f'Bad argument: {world_abbv}')
 			raise BadArgument
 		
+		guild = ctx.message.guild
+		
 		total_results = 0
 		map_id_list = []
 		if map_name:
@@ -497,7 +501,7 @@ class Tracker(Cog):
 			user_display_names = []
 			for user_id in user_ids:
 				try:
-					member = self.client.get_user(user_id)
+					member = guild.get_member(user_id)
 					user_display_names.append(member.display_name)
 				except Exception as exc:
 					print(f"Caught exception at show_countdow {exc}")
