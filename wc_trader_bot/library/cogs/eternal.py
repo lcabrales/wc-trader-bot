@@ -113,17 +113,17 @@ class Eternal(Cog):
 						embed_description += "\n"
 						previous_world_id = None
 
-					embed_description += f"* {world_name} "
+					embed_description += f"* **{world_name} "
 
 					piece_names = []
 					for data_item in user_data:
 						piece_names.append(data_item[1])
 
-					embed_description += f"{self.array_to_string(piece_names)} "
+					embed_description += f"{self.array_to_string(piece_names)}:** "
 
 					try:
 						member = guild.get_member(user_id)
-						embed_description += f"({member.display_name})"
+						embed_description += f"{member.display_name}"
 					except Exception as exc:
 						print(f"Caught exception at show_countdow {exc}")
 				
