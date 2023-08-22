@@ -78,7 +78,7 @@ class Eternal(Cog):
 	
 	# # # # # #
 	# COUNTDOWN
-	async def create_countdown_embed(self, threshold):
+	async def create_countdown_embed(self, threshold, guild):
 		world_ids = db.column("SELECT id FROM world ORDER BY name")
 
 		embed_description = f"Shows the users seeking {threshold} or less pieces of a certain map.\n\n"
@@ -122,7 +122,7 @@ class Eternal(Cog):
 					embed_description += f"{self.array_to_string(piece_names)} "
 
 					try:
-						member = self.client.get_user(user_id)
+						member = guild.get_member(user_id)
 						embed_description += f"({member.display_name})"
 					except Exception as exc:
 						print(f"Caught exception at show_countdow {exc}")
@@ -152,11 +152,11 @@ class Eternal(Cog):
 			await ctx.send(f'Bad argument: {threshold} - must be between 1 and 20')
 			raise BadArgument("threshold must be between 1 and 20")
 		
-		embed = await self.create_countdown_embed(threshold)
-
+		guild = ctx.message.guild
+		
 		# only one message per guild of each type
 		existing_message_id = db.field("SELECT message_id FROM eternal WHERE guild_id = ? AND eternal_type_id = ?", 
-			ctx.message.guild.id, TYPE_COUNTDOWN)
+			guild.id, TYPE_COUNTDOWN)
 
 		# delete the previous message so we stop updating it
 		if existing_message_id:
@@ -175,6 +175,7 @@ class Eternal(Cog):
 			db.execute("DELETE FROM eternal WHERE message_id = ?", existing_message_id)
 
 		print("updating eternal countdown...")
+		embed = await self.create_countdown_embed(threshold, guild)
 		message = await ctx.send(embed=embed)
 
 		# delete original author message (the one that issued the command)
@@ -210,7 +211,7 @@ class Eternal(Cog):
 
 				await message.delete()
 			except Exception as exc:
-				print(f"Caught exception at show_countdow {exc}")
+				print(f"Caught exception at show_countdown {exc}")
 			
 			db.execute("DELETE FROM eternal WHERE message_id = ?", existing_message_id)
 
@@ -246,7 +247,7 @@ class Eternal(Cog):
 					continue
 
 				threshold = int(db.field("SELECT value FROM eternal_params WHERE eternal_id = ? and key = ?", message_id, THRESHOLD_KEY))
-				embed = await self.create_countdown_embed(threshold)
+				embed = await self.create_countdown_embed(threshold, message.guild)
 				await message.edit(embed=embed)
 			except Exception as exc:
 				print(f"Caught exception at countdown {exc}")
@@ -254,7 +255,7 @@ class Eternal(Cog):
 
 	# # # # # #
 	# User's Maps Count
-	async def create_users_maps_embed(self):
+	async def create_users_maps_embed(self, guild):
 		embed_description = "Users that are seeking at least one piece of a certain map.\n\n"
 
 		map_count_result = db.records(USERS_MAP_COUNT_QUERY, STATUS_SEEKING)
@@ -279,7 +280,7 @@ class Eternal(Cog):
 			user_names = []
 			for user_id in user_ids:
 				try:
-					member = self.client.get_user(user_id)
+					member = guild.get_member(user_id)
 					user_names.append(member.display_name)
 				except Exception as exc:
 					print(f"Caught exception at show_countdow {exc}")
@@ -304,11 +305,11 @@ class Eternal(Cog):
 	@eternal.command(name="mapcount")
 	@has_permissions(manage_guild=True)
 	async def show_users_map_count(self, ctx):
-		embed = await self.create_users_maps_embed()
+		guild = ctx.message.guild
 
 		# only one message per guild of each type
 		existing_message_id = db.field("SELECT message_id FROM eternal WHERE guild_id = ? AND eternal_type_id = ?", 
-			ctx.message.guild.id, TYPE_USERS_MAP_COUNT)
+			guild.id, TYPE_USERS_MAP_COUNT)
 
 		# delete the previous message so we stop updating it
 		if existing_message_id:
@@ -327,6 +328,7 @@ class Eternal(Cog):
 			db.execute("DELETE FROM eternal WHERE message_id = ?", existing_message_id)
 
 		print("updating eternal users map count...")
+		embed = await self.create_users_maps_embed(guild)
 		message = await ctx.send(embed=embed)
 
 		# delete original author message (the one that issued the command)
@@ -395,7 +397,7 @@ class Eternal(Cog):
 				if not message:
 					continue
 
-				embed = await self.create_users_maps_embed()
+				embed = await self.create_users_maps_embed(message.guild)
 				await message.edit(embed=embed)
 			except Exception as exc:
 				print(f"Caught exception at countdown {exc}")
