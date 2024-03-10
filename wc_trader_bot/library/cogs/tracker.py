@@ -457,10 +457,10 @@ class Tracker(Cog):
 				await ctx.send(f'Bad argument: {map_name}')
 				raise BadArgument
 		
-		db.execute(MAP_REMOVE_ALL_PIECES_STATUS_QUERY, owner.id, STATUS_OWNED, map_id)
+		db.execute(MAP_REMOVE_ALL_PIECES_QUERY, owner.id, map_id)
 		db.commit()
 
-		embed_description = f"Set the map {world_name} {map_name} as completed and removed its pieces marked as **owned** in your collection."
+		embed_description = f"Set the map {world_name} {map_name} as completed and removed all its pieces in your collection."
 		embed = Embed(title=world_name, description=embed_description, 
 						colour=COLOUR_SUCCESS, timestamp=None)
 		

@@ -1006,3 +1006,86 @@ CREATE TABLE IF NOT EXISTS eternal_params (
 INSERT OR IGNORE INTO eternal_type (id, name)
 VALUES
 	('8712a0fa-0eae-47ef-9f5e-023e30e35ce1', 'users_map_count');
+
+-- Migration v1.4.0
+INSERT OR IGNORE INTO world (id, name, abbv)
+VALUES
+	('392b4b8a-ca4b-420d-bd21-c44ce3b06f9b', 'Shenkuu', 'SK');
+
+INSERT OR IGNORE INTO map (id, name, world_id)
+VALUES
+	('6b8b8eaf-e8f7-48fe-83c1-517ef9f7a4b1', '1', (SELECT id FROM world WHERE abbv = 'SK')),
+	('d885e241-29e7-4a09-bf42-8906ee9a530f', '2', (SELECT id FROM world WHERE abbv = 'SK')),
+	('3c97f4e0-28f6-4642-bd1e-c2e433ad2a08', '3', (SELECT id FROM world WHERE abbv = 'SK'));
+
+-- INSERT OR IGNORE values for the piece table
+INSERT OR IGNORE INTO piece (id, name, order_by, map_id)
+VALUES
+	('94a601e2-06e3-4ff6-b7b3-84ea09ef5d42', '1.1', 1, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('979f5eba-dae1-4102-80ed-4ef7cfe9f9fe', '1.2', 2, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('0b638ecb-5b9c-4b33-bd08-55964334e687', '1.3', 3, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('358a6791-7758-425f-9a47-769672e26a90', '1.4', 4, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('434ea6f7-97e3-4170-93a3-8c3c0f2d53f9', '1.5', 5, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('3b373850-ea69-4e7e-ae03-eb7dc994340f', '1.6', 6, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('640e9018-7d31-42fc-81ed-7ed3d49357fd', '1.7', 7, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('165531ef-cb52-4e6c-bf75-4b3a9d875224', '1.8', 8, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('6c764b8f-098e-42e3-892e-6811161494bc', '1.9', 9, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('2974459a-8973-4c21-9fe1-919abe48ed63', '1.10', 10, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('d4337a0c-4a08-49c3-a4af-43b295027071', '1.11', 11, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('f7040d5c-ca23-4101-bda4-71e27713e770', '1.12', 12, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('bc24d03a-d1a8-44d5-bc75-c70962a63383', '1.13', 13, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('a723c9ab-60b4-46c2-be50-204d0be17e01', '1.14', 14, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('684b383f-157e-4261-91c8-06f466830441', '1.15', 15, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('05036c58-e870-4b69-b3a9-18ec19c80537', '1.16', 16, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('87a41ab1-747a-43ca-9585-f4b591ee8938', '1.17', 17, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('a24f7495-dc98-4f16-b37b-16b2edc11e73', '1.18', 18, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('c8160702-939d-4a40-92bc-ebe2375f2b00', '1.19', 19, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('4ac2b87c-278e-4357-a182-0a079c03cccc', '1.20', 20, (SELECT id FROM map WHERE name = '1' AND world_id = (SELECT id FROM world WHERE abbv = 'SK')));
+
+-- INSERT OR IGNORE values for the piece table
+INSERT OR IGNORE INTO piece (id, name, order_by, map_id)
+VALUES
+	('0251b17b-3d60-49cd-9585-7408c3ac844a', '2.1', 1, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('44e9b510-2985-4519-ac10-0f8941e4afc6', '2.2', 2, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('a5d9c7b9-f9ee-448e-b0ac-4cf552f522fa', '2.3', 3, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('3b88d749-9428-46f5-8d39-ec8a6c5d311d', '2.4', 4, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('f34daeaa-6af1-4068-b1aa-c92a5f00c519', '2.5', 5, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('21a877db-31c4-4bb8-92a3-ac030e38764d', '2.6', 6, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('15d61034-cb73-4d81-a45e-62132fffa714', '2.7', 7, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('f9a16551-a7a7-4fe2-b802-f3dcbf4334da', '2.8', 8, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('de1b958f-e03b-4fa0-8762-4a9e843dbfaf', '2.9', 9, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('c045287e-7982-4485-bc07-a595f62f75cd', '2.10', 10, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('2c834dca-f31b-4029-9b90-241b59995096', '2.11', 11, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('ad77ff7b-f757-4628-8797-e6916249e6b0', '2.12', 12, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('6a53705c-570c-4390-8dbc-7187229e12aa', '2.13', 13, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('adb0da50-3ede-4fe7-8be2-fda6dc71cd37', '2.14', 14, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('287e3caf-b2f5-47e9-ae8e-dd70c8cd5583', '2.15', 15, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('43198eab-6d6e-4179-a921-c28018806a93', '2.16', 16, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('2ac6f85a-7989-4bad-9975-c3727331a555', '2.17', 17, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('0320b39e-daca-4ec6-94c4-787598844377', '2.18', 18, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('a0d050f0-db31-4d6c-9240-a2e8b7a3f326', '2.19', 19, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('1bee7554-f570-4e22-9a0f-b45fb5c2d534', '2.20', 20, (SELECT id FROM map WHERE name = '2' AND world_id = (SELECT id FROM world WHERE abbv = 'SK')));
+
+-- INSERT OR IGNORE values for the piece table
+INSERT OR IGNORE INTO piece (id, name, order_by, map_id)
+VALUES
+	('f7fde238-ea97-4958-bfbd-a58642b55fad', '3.1', 1, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('2f6fe616-e8a1-4a64-9233-9785932c6bb1', '3.2', 2, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('c30d8716-84b6-40b1-85ef-f467a5c1b153', '3.3', 3, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('ed3bcf4a-1958-4aea-baca-4f64b69aad15', '3.4', 4, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('649cb1eb-20f3-4c9c-87cd-c235d574a0bf', '3.5', 5, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('dfc8db93-8447-4394-8e76-b18e05efd739', '3.6', 6, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('8bcf3f3e-8815-449b-9962-25c068231345', '3.7', 7, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('e345207b-5fc5-4126-af58-876ead32a1db', '3.8', 8, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('a0860f85-4900-4913-a1ea-c00b7a81a33d', '3.9', 9, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('aa250f04-0669-4005-a8fa-0a9dbf2bbfa8', '3.10', 10, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('13a97e6c-1248-46c2-b379-e4687312a2f5', '3.11', 11, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('2082fd03-0fab-47b6-9cdf-b4cc68a775db', '3.12', 12, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('1ef30b1e-9f74-4465-858c-426fabda6b39', '3.13', 13, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('7390c2d0-3a03-47df-89e5-08d59f6c248b', '3.14', 14, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('cc4adf89-e2fd-4281-8b91-7810ebd7aa75', '3.15', 15, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('ff5469f8-6892-48a8-9c00-eb2ef2b5c623', '3.16', 16, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('bae406f7-f42d-4a67-9439-8095721ad920', '3.17', 17, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('23f96697-a316-4dc3-a9fe-0ae21b13faaa', '3.18', 18, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('a83e16f6-642c-4eb1-9ac5-adc11a8e0ea7', '3.19', 19, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK'))),
+	('5b54965b-36d8-4be3-abd8-a634e62cb882', '3.20', 20, (SELECT id FROM map WHERE name = '3' AND world_id = (SELECT id FROM world WHERE abbv = 'SK')));
