@@ -108,6 +108,14 @@ class Eternal(Cog):
 					if not user_data or len(user_data) > threshold:
 						continue
 
+					try:
+						member = guild.get_member(user_id)
+					except Exception as exc:
+						print(f"Caught exception at create_countdown_embed {exc}")
+
+					if not member:
+						continue
+
 					if previous_world_id and previous_world_id != world_id:
 						# extra space between different worlds
 						embed_description += "\n"
@@ -122,10 +130,9 @@ class Eternal(Cog):
 					embed_description += f"{self.array_to_string(piece_names)}:** "
 
 					try:
-						member = guild.get_member(user_id)
 						embed_description += f"{member.display_name}"
 					except Exception as exc:
-						print(f"Caught exception at show_countdow {exc}")
+						print(f"Caught exception at create_countdown_embed {exc}")
 				
 					embed_description += "\n"
 
